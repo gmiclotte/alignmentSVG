@@ -49,7 +49,6 @@ class SAMEntry:
                         
         def len(self):
                 return len(self.seq)
-        
 
 class Sequence:
         def __init__(self, meta, seq):
@@ -86,15 +85,35 @@ def fasta_parse(ifname):
         for line in infile:
                 if line.startswith('>'): #header
                         if meta != "":
+                                yield [meta, seq]
                                 meta = ""
                                 seq = ""
-                                yield [meta, seq]
                         meta = line[1:]
                 else:
-                        seq += line
+                        seq += line.strip()
         if meta != "":
                 yield [meta, seq]
         infile.close()
+
+def fastq_parse(ifname):
+        infile = open(ifname)
+        meta = ""
+        seq = ""
+        count = 0
+        for line in infile:
+                if count == 0:
+                        if meta != "":
+                                yield [meta, seq]
+                                meta = ""
+                                seq = ""
+                        meta = line[1:]
+                elif count == 1:
+                        seq = line.strip()
+                count = (count + 1) % 4
+        if meta != "":
+                yield [meta, seq]
+        infile.close()
+
 
 def sam_parse(ifname):
         infile = open(ifname)
@@ -215,15 +234,27 @@ def add_svg_track(SVG, x, y, width, height, style):
 def add_svg_track_space(SVG, distance):
         SVG.depth += distance
 
+def draw_seq(SVG, x, y, ref, seq, style, diff_only = True):
+        svg = ""
+        for i in range(len(seq)):
+                if ((not diff_only) or (seq[i] != ref[i])):
+                        svg += draw_acgt(SVG, x + i * SVG.block_size, y, seq[i], style)
+        return svg
+
+def draw_acgt(SVG, x, y, c, style):
+        return "<text x=\"" + str(x + SVG.block_size / 2) + "\" y=\"" + str(y + SVG.block_size - 1) + "\" text-anchor=\"middle\" alignment-baseline=\"middle\">" + str(c) + "</text>"
+
 def reference_partial_svg(SVG, ref):
-	if len(ref.seq) < SVG.view_range[1]:
-		SVG.dist = len(ref.seq) - SVG.begin
-		SVG.view_range = [SVG.begin, len(ref.seq)]
+        if len(ref.seq) < SVG.view_range[1]:
+                SVG.dist = len(ref.seq) - SVG.begin
+                SVG.view_range = [SVG.begin, len(ref.seq)]
         x = SVG.border_distance
         y = SVG.border_distance
         w = SVG.dist * SVG.block_size
         h = SVG.block_size
         svg = add_svg_track(SVG, x, y, w, h, SVG.reference_style)
+        ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
+        svg += draw_seq(SVG, x, y, ref_substr, ref_substr, SVG.reference_style, False)
         add_svg_track_space(SVG, SVG.reference_distance)
         return svg
 
@@ -241,6 +272,8 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_depth, track):
                         x = trimmed_start
                         w = trimmed_end - trimmed_start
                         svg += add_svg_track(SVG, x, y, w , h, SVG.line_style[track])
+                        ref_substr = ref.seq[SVG.view_range[0] + (start if start > 0 else 0):SVG.view_range[0] + (start if start > 0 else 0) + e.len()]
+                        svg += draw_seq(SVG, x, y, ref_substr, fasta[e.qname].seq, SVG.reference_style)
                 add_svg_track_space(SVG, SVG.line_distance)
                 if SVG.depth + SVG.block_size > max_depth:
                         break
@@ -256,8 +289,7 @@ def end_partial_svg():
         svg = "\n" + "</svg>"
         return svg
 
-def make_svg(refs, sam, reads):
-        ref = refs[0]
+def make_svg(ref, sam, reads):
         SVG = SVGProperties()
         svg = reference_partial_svg(SVG, ref)
         ref_depth = SVG.depth
@@ -282,7 +314,14 @@ def main(argv=None):
         references = [Sequence(s[0], s[1]) for s in fasta_parse(reference_file)]
         sam_entries = sam_parse(sam_file)
         # TODO: we don't actually need to parse the fastq files right now, more efficient to save till moment of drawing that track
-        reads = [[Sequence(s[0], s[1]) for s in fasta_parse(read_files[i])] for i in range(len(read_files))]
-        print(make_svg(references, sam_entries, reads))
+        reads = []
+        for i in range(len(read_files)):
+                fasta = {}
+                for s in fastq_parse(read_files[i]):
+                        sequence = Sequence(s[0], s[1])
+                        fasta[sequence.name] = sequence
+                reads += [fasta]
+        reference = references[0] #TODO we only look at the first reference, this should probably be specifiec in some other way
+        print(make_svg(reference, sam_entries, reads))
 
 main()
