@@ -20,6 +20,7 @@
 
 from __future__ import print_function
 import sys
+import re
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -32,7 +33,8 @@ class SAMEntry:
                 self.rname = props[2]
                 self.pos = int(props[3]) - 1 #change to 0-based
                 self.mapq = props[4]
-                self.cigar = props[5]
+                self.cigar = re.findall(r'(\d+)([A-Z]{1})', props[5])
+                self.cigar = [(int(c), s) for c, s in self.cigar]
                 self.rnext = props[6]
                 self.pnext = props[7]
                 self.tlen = props[8]
@@ -203,9 +205,9 @@ def pile_entries(SVG, sam):
 
 class SVGProperties:
         def __init__(self):
-                self.begin = 49300
+                self.begin = 173320#49300
                 self.dist = 300
-                self.min_separation = 2
+                self.min_separation = 2000
                 self.height = 3000
 #                self.zoom = 50
                 self.block_size = 10
@@ -234,14 +236,38 @@ def add_svg_track(SVG, x, y, width, height, style):
 def add_svg_track_space(SVG, distance):
         SVG.depth += distance
 
-def draw_seq(SVG, x, y, ref, seq, style, diff_only = True):
+def draw_seq(SVG, x, y, ref, seq, start, cigar, diff_only = True):
         svg = ""
-        for i in range(len(seq)):
-                if ((not diff_only) or (seq[i] != ref[i])):
-                        svg += draw_acgt(SVG, x + i * SVG.block_size, y, seq[i], style)
+        ref_idx = 0
+        seq_idx = start
+        cig_idx = 0
+        cig_count = start
+        while seq_idx < len(seq) and ref_idx < len(ref):
+                if not diff_only: #draw all the things
+                        svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, seq[seq_idx])
+                        ref_idx += 1
+                        seq_idx += 1
+                else: #only draw differences
+                        if cigar[cig_idx][1] == 'D':
+                                svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, '-')
+                                ref_idx += 1
+                        elif cigar[cig_idx][1] == 'I':
+                                svg += "<rect x=\"" + str(x + ref_idx * SVG.block_size - 1) + "\" y=\"" + str(y) + "\" width=\"" + str(2) + "\" height=\"" + str(SVG.block_size) + "\" style=" + SVG.label_style + "/>"
+                                seq_idx += 1
+                        else:
+                                if seq[seq_idx] != ref[ref_idx]:
+                                        svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, seq[seq_idx])
+                                ref_idx += 1
+                                seq_idx += 1
+                        cig_count += 1
+                        while cig_count >= cigar[cig_idx][0]:
+                                cig_count -= cigar[cig_idx][0]
+                                cig_idx += 1
+                                if cig_idx == len(cigar):
+                                        return svg
         return svg
 
-def draw_acgt(SVG, x, y, c, style):
+def draw_acgt(SVG, x, y, c):
         return "<text x=\"" + str(x + SVG.block_size / 2) + "\" y=\"" + str(y + SVG.block_size - 1) + "\" text-anchor=\"middle\" alignment-baseline=\"middle\">" + str(c) + "</text>"
 
 def reference_partial_svg(SVG, ref):
@@ -254,7 +280,7 @@ def reference_partial_svg(SVG, ref):
         h = SVG.block_size
         svg = add_svg_track(SVG, x, y, w, h, SVG.reference_style)
         ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
-        svg += draw_seq(SVG, x, y, ref_substr, ref_substr, SVG.reference_style, False)
+        svg += draw_seq(SVG, x, y, ref_substr, ref_substr, 0, SVG.reference_style, False)
         add_svg_track_space(SVG, SVG.reference_distance)
         return svg
 
@@ -271,9 +297,9 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_depth, track):
                         svg += "\n" #separate entries in SVG by empty line to improve readability
                         x = trimmed_start
                         w = trimmed_end - trimmed_start
-                        svg += add_svg_track(SVG, x, y, w , h, SVG.line_style[track])
+                        svg += add_svg_track(SVG, x, y, w , h, SVG.line_style[track%2])
                         ref_substr = ref.seq[SVG.view_range[0] + (start if start > 0 else 0):SVG.view_range[0] + (start if start > 0 else 0) + e.len()]
-                        svg += draw_seq(SVG, x, y, ref_substr, fasta[e.qname].seq, SVG.reference_style)
+                        svg += draw_seq(SVG, x, y, ref_substr, fasta[e.qname].seq, -start if start < 0 else 0, e.cigar)
                 add_svg_track_space(SVG, SVG.line_distance)
                 if SVG.depth + SVG.block_size > max_depth:
                         break
