@@ -1,6 +1,5 @@
 '''
         Copyright (C) 2016 Giles Miclotte (giles.miclotte@intec.ugent.be)
-        This file is part of BioNanoSim
 
         This program is free software; you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
@@ -35,6 +34,8 @@ class SAMEntry:
                 self.mapq = props[4]
                 self.cigar = re.findall(r'(\d+)([A-Z]{1})', props[5])
                 self.cigar = [(int(c), s) for c, s in self.cigar]
+                if self.cigar[0][1] == 'S' or self.cigar[0][1] == 'H':
+                        self.pos -= self.cigar[0][0]
                 self.rnext = props[6]
                 self.pnext = props[7]
                 self.tlen = props[8]
@@ -204,10 +205,10 @@ def pile_entries(SVG, sam):
         return piles
 
 class SVGProperties:
-        def __init__(self):
-                self.begin = 173320#49300
-                self.dist = 300
-                self.min_separation = 2000
+        def __init__(self, begin, dist):
+                self.begin = begin
+                self.dist = dist
+                self.min_separation = 5
                 self.height = 3000
 #                self.zoom = 50
                 self.block_size = 10
@@ -315,8 +316,7 @@ def end_partial_svg():
         svg = "\n" + "</svg>"
         return svg
 
-def make_svg(ref, sam, reads):
-        SVG = SVGProperties()
+def make_svg(SVG, ref, sam, reads):
         svg = reference_partial_svg(SVG, ref)
         ref_depth = SVG.depth
         #total - used - bottom border - remaining borders
@@ -331,11 +331,16 @@ def make_svg(ref, sam, reads):
         return start_partial_svg(SVG) + svg + end_partial_svg()
 
 def main(argv=None):
+        if argv == None:
+                argv = sys.argv
+        if len(argv) < 6:
+                print('Usage: correctionSVG.py reference.fasta ref_begin_idx ref_distance sorted.sam reads1.fastq <reads2.fastq ...>')
+                exit()
         #specify input, can be changed to cl options of course
-        reference_file = '1_contig.fasta'
-        sam_file = 'sorted.sam'
-        original_reads_file = 'mapped.fastq'
-        read_files = [original_reads_file, 'mappedCorrected.fastq'] # this can be several files, each will create a new alignment track
+        reference_file = argv[1]
+        SVG = SVGProperties(int(argv[2]), int(argv[3]))
+        sam_file = argv[4]
+        read_files = [argv[i] for i in range(5, len(argv))] # this can be several files, each will create a new alignment track
         #parse input
         references = [Sequence(s[0], s[1]) for s in fasta_parse(reference_file)]
         sam_entries = sam_parse(sam_file)
@@ -348,6 +353,6 @@ def main(argv=None):
                         fasta[sequence.name] = sequence
                 reads += [fasta]
         reference = references[0] #TODO we only look at the first reference, this should probably be specifiec in some other way
-        print(make_svg(reference, sam_entries, reads))
+        print(make_svg(SVG, reference, sam_entries, reads))
 
 main()
