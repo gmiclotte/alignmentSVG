@@ -34,12 +34,14 @@ class SAMEntry:
                 self.mapq = props[4]
                 self.cigar = re.findall(r'(\d+)([A-Z]{1})', props[5])
                 self.cigar = [(int(c), s) for c, s in self.cigar]
-                if self.cigar[0][1] == 'S' or self.cigar[0][1] == 'H':
-                        self.pos -= self.cigar[0][0]
                 self.rnext = props[6]
                 self.pnext = props[7]
                 self.tlen = props[8]
                 self.seq = props[9]
+                if self.cigar[0][1] == 'S':
+                        self.seq = self.seq[self.cigar[0][0]:]
+                if self.cigar[-1][1] == 'S':
+        	        self.seq = self.seq[:len(self.seq) - self.cigar[-1][0]]
                 self.qual = props[10]
                 self.optional = {}
                 for i in range(11, len(props)):
@@ -243,13 +245,18 @@ def draw_seq(SVG, x, y, ref, seq, start, cigar, diff_only = True):
         seq_idx = start
         cig_idx = 0
         cig_count = start
+        if diff_only:
+        	if cigar[cig_idx][1] == 'S' or cigar[cig_idx][1] == 'H':
+	        	if seq_idx < cigar[cig_idx][0]:
+        			seq_idx = cigar[cig_idx][0]
+        			cig_count = cigar[cig_idx][0]
         while seq_idx < len(seq) and ref_idx < len(ref):
                 if not diff_only: #draw all the things
                         svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, seq[seq_idx])
                         ref_idx += 1
                         seq_idx += 1
                 else: #only draw differences
-                        if cigar[cig_idx][1] == 'D':
+                	if cigar[cig_idx][1] == 'D':
                                 svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, '-')
                                 ref_idx += 1
                         elif cigar[cig_idx][1] == 'I':
@@ -266,6 +273,9 @@ def draw_seq(SVG, x, y, ref, seq, start, cigar, diff_only = True):
                                 cig_idx += 1
                                 if cig_idx == len(cigar):
                                         return svg
+                                elif cig_idx == len(cigar) - 1:
+                                	if cigar[cig_idx][1] == 'S' or cigar[cig_idx][1] == 'H':
+                                		return svg
         return svg
 
 def draw_acgt(SVG, x, y, c):
