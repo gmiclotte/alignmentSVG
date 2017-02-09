@@ -84,6 +84,14 @@ class XmapEntry:
 		for a in props[13][1:-1].split(')('):
 			self.Alignment += [a.split(',')]
 
+def ltkmer_parse(ifname):
+	infile = open(ifname)
+	for line in infile:
+		l = line.split('\t')
+		if l[1] != '0':
+			yield int(l[0])
+	infile.close()
+
 def fasta_parse(ifname):
 	infile = open(ifname)
 	meta = ''
@@ -234,6 +242,7 @@ class SVG_properties:
 		self.label2_colour = '#0000ff'
 		self.background_style = '\"fill:white;fill-opacity:1.0;\"'
 		self.text_style = '\"writing-mode: bt;text-anchor: middle\"'
+		self.ltkmer_style = '\"fill:gray;fill-opacity:0.5;\"'
 		# [current|max] height of the picture
 		self.depth = 0
 		self.height = 3000
@@ -490,6 +499,28 @@ def reference_partial_svg_xmap(SVG, ref):
 	svg += add_nicks(SVG, ref, y, SVG.reference_height)
 	return svg
 
+def ltkmer_rect(SVG, position, length):
+	x = SVG.border['left'] + (position - SVG.begin) * SVG.block_size
+	y = 10
+	w = length * SVG.block_size
+	wmax = SVG.border['left'] + SVG.dist * SVG.block_size - x
+	eprint(w, wmax)
+	w = w if w < wmax else wmax
+	h = SVG.height - SVG.border['bottom'] - 10
+	return add_svg_rect(SVG, x, y, w, h, SVG.ltkmer_style)
+
+def ltkmer_partial_svg(SVG):
+	svg = ''
+	begin = SVG.begin - 1
+	end = begin
+	for pos in ltkmer_parse('21_partial_results.txt'):
+		if end < pos:
+			svg += ltkmer_rect(SVG, begin, end - begin)
+			begin = pos
+		end = pos + 21
+	svg += ltkmer_rect(SVG, begin, end - begin)
+	return svg
+
 def make_svg(SVG, ref, alnms, tracks, track_names):
 	svg = reference_partial_svg(SVG, ref)
 	ref_depth = SVG.depth
@@ -507,6 +538,7 @@ def make_svg(SVG, ref, alnms, tracks, track_names):
 			piles = pile_entries(SVG, alnms[i])
 			svg += xmap_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i)
 	SVG.height = SVG.depth + SVG.border['bottom']
+	svg += ltkmer_partial_svg(SVG)
 	return start_partial_svg(SVG) + svg + end_partial_svg()
 
 def start_partial_svg(SVG):
