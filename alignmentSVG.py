@@ -61,7 +61,7 @@ def main_SAM(argv=None):
 			sequence = Sequence(s[0], s[1])
 			fasta[sequence.name] = sequence
 		reads += [fasta]
-	tracks = ['Initial reads', 'Corrected reads'] #TODO remove this line
+	tracks = ['Uncorrected', 'Corrected'] #TODO remove this line
 	print(make_svg(SVG, references[ref_id], sam_entries, reads, tracks))
 
 def main(argv=None):

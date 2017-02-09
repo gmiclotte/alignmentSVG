@@ -249,24 +249,8 @@ class SVG_properties:
 		self.text = False
 		# image borders
 		base_border = 1
-		if self.text:
-			self.border = {	'left' : base_border + 6 + 2,
-				'lefttext' : base_border + 6,
-				'right' : base_border,
-				'top' : base_border + 2 * 17 + 2,
-				'toptext' : base_border + 17,
-				'bottom' : base_border
-			}
-		else:
-			self.border = {	'left' : base_border,
-					'lefttext' : base_border,
-					'right' : base_border,
-					'top' : base_border,
-					'toptext' : base_border,
-					'bottom' : base_border
-			}
 		self.border = {	'left' : 20.5,
-				'lefttext' : base_border,
+				'lefttext' : 15,
 				'right' : 26,
 				'top' : 100,
 				'toptext' : base_border,
@@ -276,7 +260,7 @@ class SVG_properties:
 	def init_sam(self):
 		self.min_separation = 5
 		self.block_size = 12.55
-		self.font_size = str(12.0 / 10.0 * self.block_size)
+		self.font_size = 12.0 / 10.0 * self.block_size
 		self.line_height = self.block_size
 		self.view_range = [self.begin, self.begin + self.dist]
 		self.track_distance = 10
@@ -316,7 +300,7 @@ def draw_ref_seq(SVG, x, y, ref, seq, start, cigar):
 	return svg
 
 def draw_acgt(SVG, x, y, c):
-	return '<text x=\"' + str(x + SVG.block_size / 2) + '\" y=\"' + str(y + SVG.block_size - 1) + '\" font-size=\"' + SVG.font_size + '\" text-anchor=\"middle\" alignment-baseline=\"middle\">' + str(c) + '</text>'
+	return '<text x=\"' + str(x + SVG.block_size / 2) + '\" y=\"' + str(y + SVG.block_size - 1) + '\" font-size=\"' + str(SVG.font_size) + '\" text-anchor=\"middle\" alignment-baseline=\"middle\">' + str(c) + '</text>'
 
 def add_nicks(SVG, cmap, y, h):
 	svg = ''
@@ -420,6 +404,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 	eprint('Drawing track: ' + track_names[track] + '.')
 	svg = ''
 	add_svg_empty_space(SVG, SVG.track_distance)
+	prev_depth = SVG.depth
 	subtracks = 0
 	for pile in piles:
 		subtracks += 1
@@ -446,6 +431,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 			break
 	#correct for depth after last subtrack
 	add_svg_empty_space(SVG, -SVG.line_distance)
+	svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.depth + prev_depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(SVG.font_size) + "pt; text-anchor:middle\"> <text>" + track_names[track] + "</text> </g>"
 	return svg
 
 def reference_partial_svg(SVG, ref):
@@ -466,6 +452,7 @@ def reference_partial_svg_sam(SVG, ref):
 	svg = add_svg_rect(SVG, x, y, w, h, SVG.track_style(SVG.reference_colour))
 	ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
 	svg += draw_ref_seq(SVG, x, y, ref_substr, ref_substr, 0, SVG.track_style(SVG.reference_colour))
+	svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.border['top'] + SVG.depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(SVG.font_size) + "pt; text-anchor:middle\"> <text>Ref</text> </g>"
 	return svg
 
 def reference_partial_svg_xmap(SVG, ref):
