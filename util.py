@@ -38,10 +38,6 @@ class SAMEntry:
 		self.pnext = props[7]
 		self.tlen = props[8]
 		self.seq = props[9]
-		if self.cigar[0][1] == 'S':
-			self.seq = self.seq[self.cigar[0][0]:]
-		if self.cigar[-1][1] == 'S':
-			self.seq = self.seq[:len(self.seq) - self.cigar[-1][0]]
 		self.qual = props[10]
 		self.optional = {}
 		for i in range(11, len(props)):
@@ -51,9 +47,11 @@ class SAMEntry:
 			elif field[1] == 'f':
 				field[2] = float(field[2])
 			self.optional[field[0]] = [field[1], field[2]]
-			
-	def len(self):
-		return len(self.seq)
+		self.len = len(self.seq)
+		if self.cigar[0][1] == 'S':
+			self.len -= self.cigar[0][0]
+		if self.cigar[-1][1] == 'S':
+			self.len -= self.cigar[-1][0]
 
 class Sequence:
 	def __init__(self, meta, seq):
@@ -187,7 +185,7 @@ def bnx_parse(ifname):
 
 def entry_before(SVG, ref, entry):
 	if SVG.type == 'SAM':
-		entry_end = entry.pos + entry.len()
+		entry_end = entry.pos + entry.len
 		ref_start = ref.pos
 		return entry_end + SVG.min_separation < ref_start
 	if SVG.type == 'XMAP':
@@ -212,7 +210,7 @@ def pile_entries(SVG, entries):
 	piles = []
 	if SVG.type == 'SAM':
 		for entry in entries:
-			if entry.pos < SVG.begin + SVG.dist and SVG.begin < entry.pos + entry.len():
+			if entry.pos < SVG.begin + SVG.dist and SVG.begin < entry.pos + entry.len:
 				pile_end_entries(SVG, piles, entry)
 	elif SVG.type == 'XMAP':
 		for entry in entries:
@@ -307,44 +305,14 @@ def add_svg_rect(SVG, x, y, width, height, style):
 def add_svg_empty_space(SVG, distance):
 	SVG.depth += distance
 
-
-def draw_seq(SVG, x, y, ref, seq, start, cigar, diff_only = True):
+def draw_ref_seq(SVG, x, y, ref, seq, start, cigar):
 	svg = ''
 	ref_idx = 0
 	seq_idx = start
-	cig_idx = 0
-	cig_count = start
-	if diff_only:
-		if cigar[cig_idx][1] == 'S' or cigar[cig_idx][1] == 'H':
-			if seq_idx < cigar[cig_idx][0]:
-				seq_idx = cigar[cig_idx][0]
-				cig_count = cigar[cig_idx][0]
 	while seq_idx < len(seq) and ref_idx < len(ref):
-		if not diff_only: #draw all the things
-			svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, seq[seq_idx])
-			ref_idx += 1
-			seq_idx += 1
-		else: #only draw differences
-			if cigar[cig_idx][1] == 'D':
-				svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, '-')
-				ref_idx += 1
-			elif cigar[cig_idx][1] == 'I':
-				svg += '<rect x=\"' + str(x + ref_idx * SVG.block_size - 1) + '\" y=\"' + str(y) + '\" width=\"' + str(2) + '\" height=\"' + str(SVG.block_size) + '\" style=' + SVG.track_style(SVG.label_colour) + '/>'
-				seq_idx += 1
-			else:
-				if seq[seq_idx] != ref[ref_idx]:
-					svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, seq[seq_idx])
-				ref_idx += 1
-				seq_idx += 1
-			cig_count += 1
-			while cig_count >= cigar[cig_idx][0]:
-				cig_count -= cigar[cig_idx][0]
-				cig_idx += 1
-				if cig_idx == len(cigar):
-					return svg
-				elif cig_idx == len(cigar) - 1:
-					if cigar[cig_idx][1] == 'S' or cigar[cig_idx][1] == 'H':
-						return svg
+		svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, seq[seq_idx])
+		ref_idx += 1
+		seq_idx += 1
 	return svg
 
 def draw_acgt(SVG, x, y, c):
@@ -420,6 +388,38 @@ def xmap_partial_svg(SVG, cmap, bnx, piles, max_subtracks, track_names, track):
 		svg += '\n' + '</g>'
 	return svg
 
+def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
+	svg = ''
+	ref_idx = 0
+	seq_idx = 0
+	cig_idx = 0
+	cig_count = 0
+	eprint()
+	eprint(ref)
+	#that's an expanded cigar
+	e_cigar = ''.join(c[1] * c[0] for c in cigar if c[1] != 'S' and c[1] != 'H')
+	eprint(e_cigar)
+	eprint(seq)
+	for c in e_cigar:
+		if c == 'D':
+			xp = x + ref_idx * SVG.block_size
+			if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
+				svg += draw_acgt(SVG, xp, y, '-')
+			ref_idx += 1
+		elif c == 'I':
+			xp = x + ref_idx * SVG.block_size - 1
+			if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
+				svg += '<rect x=\"' + str(xp) + '\" y=\"' + str(y) + '\" width=\"' + str(2) + '\" height=\"' + str(SVG.block_size) + '\" style=' + SVG.track_style(SVG.label_colour) + '/>'
+			seq_idx += 1
+		elif c == 'M':
+			xp = x + ref_idx * SVG.block_size
+			if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
+				if (not diff_only) or seq[seq_idx] != ref[ref_idx]:
+					svg += draw_acgt(SVG, xp, y, seq[seq_idx])
+			ref_idx += 1
+			seq_idx += 1
+	return svg
+
 def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track):
 	eprint('Drawing track: ' + track_names[track] + '.')
 	svg = ''
@@ -430,19 +430,21 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 		y = SVG.depth
 		h = SVG.block_size
 		for e in pile:
-			start = e.pos - SVG.begin
-			trimmed_start = SVG.border['left'] + max(start * SVG.block_size, 0)
-			end = start + e.len()
-			trimmed_end = SVG.border['left'] + min(end * SVG.block_size, SVG.dist * SVG.block_size)
+			rel_pos = e.pos - SVG.begin
+			rel_end = rel_pos + e.len
+			x = SVG.border['left'] + max(rel_pos, 0) * SVG.block_size
+			w = SVG.border['left'] + min(rel_end, SVG.dist) * SVG.block_size - x
 			svg += '\n'
-			x = trimmed_start
-			w = trimmed_end - trimmed_start
 			svg += add_svg_rect(SVG, x, y, w , h, SVG.track_style(SVG.line_colour[track%2]))
-			ref_start = SVG.view_range[0] + (start if start > 0 else 0)
-			ref_end = ref_start + e.len()
-			ref_end = ref_end if ref_end < SVG.view_range[1] else SVG.view_range[1]
+			ref_start = SVG.view_range[0] + rel_pos
+			ref_end = SVG.view_range[0] + rel_pos + e.len
 			ref_substr = ref.seq[ref_start:ref_end]
-			svg += draw_seq(SVG, x, y, ref_substr, fasta[e.qname].seq, -start if start < 0 else 0, e.cigar)
+			seq = fasta[e.qname].seq
+			if e.cigar[0][1] == 'S':
+				seq = seq[e.cigar[0][0]:]
+			if e.cigar[-1][1] == 'S':
+				seq = seq[:len(seq) - e.cigar[-1][0]]
+			svg += draw_seq(SVG, SVG.border['left'] + rel_pos * SVG.block_size, y, ref_substr, seq, e.cigar)
 		add_svg_empty_space(SVG, SVG.line_distance)
 		if subtracks == max_subtracks:
 			break
@@ -467,7 +469,7 @@ def reference_partial_svg_sam(SVG, ref):
 	h = SVG.block_size
 	svg = add_svg_rect(SVG, x, y, w, h, SVG.track_style(SVG.reference_colour))
 	ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
-	svg += draw_seq(SVG, x, y, ref_substr, ref_substr, 0, SVG.track_style(SVG.reference_colour), False)
+	svg += draw_ref_seq(SVG, x, y, ref_substr, ref_substr, 0, SVG.track_style(SVG.reference_colour))
 	return svg
 
 def reference_partial_svg_xmap(SVG, ref):
