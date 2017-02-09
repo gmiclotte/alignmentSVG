@@ -394,12 +394,8 @@ def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
 	seq_idx = 0
 	cig_idx = 0
 	cig_count = 0
-	eprint()
-	eprint(ref)
-	#that's an expanded cigar
+	# expanded cigar
 	e_cigar = ''.join(c[1] * c[0] for c in cigar if c[1] != 'S' and c[1] != 'H')
-	eprint(e_cigar)
-	eprint(seq)
 	for c in e_cigar:
 		if c == 'D':
 			xp = x + ref_idx * SVG.block_size
