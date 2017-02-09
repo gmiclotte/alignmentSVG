@@ -26,8 +26,7 @@ def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
 class SAMEntry:
-	def __init__(self, line):
-		props = line.strip().split('\t')
+	def __init__(self, props):
 		self.qname = props[0]
 		self.flag = props[1]
 		self.rname = props[2]
@@ -128,7 +127,9 @@ def sam_parse(ifname):
 		if line.startswith('@'): #header
 			continue
 		else: #entry
-			sam += [SAMEntry(line)]
+			props = line.strip().split('\t')
+			if props[5] != '*':
+				sam += [SAMEntry(props)]
 	infile.close()
 	return sam
 
