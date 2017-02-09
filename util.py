@@ -9,13 +9,13 @@
 
 	This program is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
 	along with this program; if not, write to the
 	Free Software Foundation, Inc.,
-	59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+	59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 '''
 
 from __future__ import print_function
@@ -400,7 +400,7 @@ def xmap_partial_svg(SVG, cmap, bnx, piles, max_subtracks, track_names, track):
 		if subtracks == max_subtracks:
 			break
 	#correct for depth after last subtrack
-	add_svg_empty_space(SVG, -SVG.line_distance)   
+	add_svg_empty_space(SVG, -SVG.line_distance)
 	if SVG.text:
 		#track string
 		svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
@@ -479,7 +479,7 @@ def reference_partial_svg_xmap(SVG, ref):
 		svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
 		x = SVG.border['lefttext']
 		y = SVG.border['top'] + SVG.reference_height / 2
-		svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' +  SVG.text_style + '>Ref</text>'
+		svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>Ref</text>'
 		svg += '\n' + '</g>'
 	x = SVG.border['left']
 	y = SVG.border['top']
