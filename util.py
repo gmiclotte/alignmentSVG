@@ -246,7 +246,7 @@ class SVG_properties:
 		# [current|max] height of the picture
 		self.depth = 0
 		self.height = 3000
-		self.max_subtracks = 200
+		self.max_subtracks = 20
 		# draw text or not
 		self.text = False
 		# image borders
@@ -267,17 +267,17 @@ class SVG_properties:
 					'toptext' : base_border,
 					'bottom' : base_border
 			}
-		self.border = {	'left' : 83,
+		self.border = {	'left' : 20.5,
 				'lefttext' : base_border,
-				'right' : 60,
-				'top' : 454,
+				'right' : 26,
+				'top' : 100,
 				'toptext' : base_border,
 				'bottom' : 10
 		}
 	
 	def init_sam(self):
 		self.min_separation = 5
-		self.block_size = 8
+		self.block_size = 12.55
 		self.font_size = str(12.0 / 10.0 * self.block_size)
 		self.line_height = self.block_size
 		self.view_range = [self.begin, self.begin + self.dist]
@@ -550,7 +550,7 @@ def start_partial_svg(SVG):
 	svg = '<svg width=\"' + str(w) + '\" height=\"' + str(h) + '\">'
 	svg += '\n' + '<rect x=\"0\" y=\"0\" width=\"' + str(w) + '\" height=\"' + str(h) + '\" style=' + SVG.background_style + '/>'
 	return svg
-	
+
 def end_partial_svg():
 	svg = '\n' + '</svg>'
 	return svg
