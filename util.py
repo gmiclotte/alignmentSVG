@@ -432,7 +432,6 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 			ref_end = ref_start + e.len()
 			ref_end = ref_end if ref_end < SVG.view_range[1] else SVG.view_range[1]
 			ref_substr = ref.seq[ref_start:ref_end]
-			eprint(ref_substr)
 			svg += draw_seq(SVG, x, y, ref_substr, fasta[e.qname].seq, -start if start < 0 else 0, e.cigar)
 		add_svg_empty_space(SVG, SVG.line_distance)
 		if subtracks == max_subtracks:
