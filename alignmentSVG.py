@@ -41,15 +41,16 @@ def main_XMAP(argv=None):
 def main_SAM(argv=None):
 	if argv == None:
 		argv = sys.argv
-	if len(argv) < 6:
-		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance sorted.sam reads1.fastq <reads2.fastq ...>')
+	if len(argv) < 8:
+		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance sorted.sam track1 reads1.fastq <track2 reads2.fastq ...>')
 		exit()
 	#specify input, can be changed to cl options of course
 	reference_file = argv[2]
 	ref_id = int(argv[3])
 	SVG = SVG_properties(argv[1], int(argv[4]), int(argv[5]))
 	sam_file = argv[6]
-	read_files = [argv[i] for i in range(7, len(argv))] # this can be several files, each will create a new alignment track
+	tracks = [argv[i] for i in range(7, len(argv), 2)] # this can be several files, each will create a new alignment track
+	read_files = [argv[i] for i in range(8, len(argv), 2)] # this can be several files, each will create a new alignment track
 	#parse input
 	references = [Sequence(s[0], s[1]) for s in fasta_parse(reference_file)]
 	sam_entries = sam_parse(sam_file)
@@ -61,7 +62,6 @@ def main_SAM(argv=None):
 			sequence = Sequence(s[0], s[1])
 			fasta[sequence.name] = sequence
 		reads += [fasta]
-	tracks = ['Uncorrected', 'Corrected'] #TODO remove this line
 	print(make_svg(SVG, references[ref_id], sam_entries, reads, tracks))
 
 def main(argv=None):

@@ -1,0 +1,25 @@
+breakpoint=breakpoint+0
+set output "temp1.svg"
+set terminal svg size 1300,100
+set multiplot
+set ytics nomirror
+set tics out
+
+set xrange [start:end]
+set xtics 50
+set ytics ymax
+set key at keyxpos, keyypos font ", 11"
+set key font ", 11"
+set xtics font ", 11"
+set ytics font ", 11"
+unset ytics
+
+plot kmer_count using 1:3 smooth freq  lw 1 lc rgb "#1b9e77" notitle
+#plot kmer_count using 1:3 smooth freq  lw 1 lc rgb "#1b9e77" title "21-mer coverage" axes x1y1
+
+set parametric
+set xtics font ", 11"
+set trange [0:ymax]
+set xtics add ("breakpoint" breakpoint)
+plot breakpoint,t ls 7 lw 2  notitle
+unset parametric
