@@ -419,7 +419,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 			svg += add_svg_rect(SVG, x, y, w , h, SVG.track_style(SVG.line_colour[track%2]))
 			ref_start = SVG.view_range[0] + rel_pos
 			ref_end = SVG.view_range[0] + rel_pos + e.len
-			ref_substr = ref.seq[ref_start:ref_end]
+			ref_substr = ref.seq[ref_start:]
 			seq = fasta[e.qname].seq
 			if e.cigar[0][1] == 'S' or  e.cigar[0][1] == 'H':
 				seq = seq[e.cigar[0][0]:]
