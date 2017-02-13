@@ -244,7 +244,7 @@ class SVG_properties:
 		# [current|max] height of the picture
 		self.depth = 0
 		self.height = 3000
-		self.max_subtracks = 20
+		self.max_subtracks = 200
 		# draw text or not
 		self.text = False
 		# image borders
