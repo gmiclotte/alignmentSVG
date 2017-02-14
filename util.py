@@ -223,15 +223,6 @@ class SVG_properties:
 		# zoom location
 		self.begin = begin
 		self.dist = dist
-		# data type specific settings
-		self.type = data_type.upper()
-		if self.type == 'SAM':
-			self.init_sam()
-		elif self.type == 'XMAP':
-			self.init_xmap()
-		else:
-			eprint('Unsupported data type:' + self.type)
-			exit()
 		# colours
 		self.reference_colour = '#b2df8a'
 		self.line_colour = ['#a6cee3', '#b2df8a']
@@ -244,11 +235,30 @@ class SVG_properties:
 		# [current|max] height of the picture
 		self.depth = 0
 		self.height = 3000
-		self.max_subtracks = 200
 		# draw text or not
 		self.text = False
 		# image borders
 		base_border = 1
+		self.border = {	'left' : base_border,
+				'lefttext' : base_border,
+				'right' : base_border,
+				'top' : base_border,
+				'toptext' : base_border,
+				'bottom' : base_border
+		}
+		self.ltkmer = False
+		# data type specific settings
+		self.type = data_type.upper()
+		if self.type == 'SAM':
+			self.init_sam()
+		elif self.type == 'XMAP':
+			self.init_xmap()
+		else:
+			eprint('Unsupported data type:' + self.type)
+			exit()
+	
+	def init_sam(self):
+		self.max_subtracks = 200
 		self.border = {	'left' : 20.5,
 				'lefttext' : 15,
 				'right' : 26,
@@ -256,9 +266,6 @@ class SVG_properties:
 				'toptext' : base_border,
 				'bottom' : 10
 		}
-		self.ltkmer = False
-	
-	def init_sam(self):
 		self.min_separation = 5
 		self.block_size = 12.55
 		self.font_size = 12.0 / 10.0 * self.block_size
@@ -270,6 +277,7 @@ class SVG_properties:
 		self.type = 'SAM'
 	
 	def init_xmap(self):
+		self.max_subtracks = 20
 		self.min_separation = 1000
 		self.zoom = 100
 		self.nick_width = 2
