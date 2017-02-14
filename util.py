@@ -256,6 +256,7 @@ class SVG_properties:
 				'toptext' : base_border,
 				'bottom' : 10
 		}
+		self.ltkmer = False
 	
 	def init_sam(self):
 		self.min_separation = 5
@@ -265,6 +266,7 @@ class SVG_properties:
 		self.view_range = [self.begin, self.begin + self.dist]
 		self.track_distance = 10
 		self.line_distance = 1
+		self.ltkmer = True
 		self.type = 'SAM'
 	
 	def init_xmap(self):
@@ -524,7 +526,8 @@ def make_svg(SVG, ref, alnms, tracks, track_names):
 			piles = pile_entries(SVG, alnms[i])
 			svg += xmap_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i)
 	SVG.height = SVG.depth + SVG.border['bottom']
-	svg += ltkmer_partial_svg(SVG)
+	if SVG.ltkmer:
+		svg += ltkmer_partial_svg(SVG)
 	return start_partial_svg(SVG) + svg + end_partial_svg()
 
 def start_partial_svg(SVG):
