@@ -328,7 +328,7 @@ def xmap_partial_svg(SVG, cmap, bnx, piles, max_subtracks, track_names, track):
 			if not e.Orientation:
 				continue
 			start = -e.QryStartPos + e.RefStartPos - SVG.begin
-			trimmed_start = SVG.border['left'] + max(start / SVG.zoom)
+			trimmed_start = SVG.border['left'] + start / SVG.zoom
 			end = e.RefEndPos - SVG.begin + e.QryLen - e.QryEndPos
 			trimmed_end = SVG.border['left'] + min(end / SVG.zoom, SVG.dist / SVG.zoom)
 			svg += '\n'
