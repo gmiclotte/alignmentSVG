@@ -287,7 +287,7 @@ class SVG_properties:
 		self.reference_height = 20
 		self.track_distance = 10
 		self.line_height = 6
-		self.line_distance = 1
+		self.line_distance = 2
 	
 	def track_style(self, colour):
 		return '\"fill:' + colour + ';stroke:black;stroke-width:0;fill-opacity:1.0;stroke-opacity:1.0\"'
