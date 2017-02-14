@@ -26,13 +26,19 @@ def main_XMAP(argv=None):
 	if (len(argv) < 9) or (len(argv) % 2 == 0):
 		print('Usage: alignmentSVG.py XMAP reference.cmap ref_id ref_begin_idx ref_distance tracks.txt 1.xmap 1.bnx <2.xmap 2.bnx ...>')
 		exit()
+	
+	eprint('Parsing input.')
+	data_type = argv[1]
+	ref_file = argv[2]
 	ref_id = int(argv[3])
-	SVG = SVG_properties(argv[1], int(argv[4]), int(argv[5])) #130 * 1000 * 1000, 100 * 1000
-	eprint('Parsing files.')
-	cmap = cmap_parse(argv[2])
-	with open(argv[6]) as f:
+	ref_begin_idx = int(argv[4])
+	ref_distance = int(argv[5])
+	track_file = argv[6]
+	
+	SVG = SVG_properties(data_type, ref_begin_idx, ref_distance)
+	cmap = cmap_parse(ref_file)
+	with open(track_file) as f:
 		tracks = f.readlines()
-	tracks = ['Real data', 'Simulation'] #TODO remove this line
 	xmaps = []
 	bnxs = []
 	for i in range(7, len(argv), 2):
