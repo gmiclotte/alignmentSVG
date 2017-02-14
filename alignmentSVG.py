@@ -33,6 +33,8 @@ def main_XMAP(argv=None):
 	with open(argv[6]) as f:
 		tracks = f.readlines()
 	tracks = ['Real data', 'Simulation'] #TODO remove this line
+	xmaps = []
+	bnxs = []
 	for i in range(7, len(argv), 2):
 		xmaps += [xmap_parse(argv[i])]
 		bnxs += [bnx_parse(argv[i + 1])]

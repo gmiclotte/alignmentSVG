@@ -460,6 +460,7 @@ def reference_partial_svg_xmap(SVG, ref):
 	if ref[-1] < SVG.view_range[1]:
 		SVG.dist = ref[-1] - SVG.begin
 		SVG.view_range = [SVG.begin, ref[-1]]
+	svg = ''
 	if SVG.text:
 		svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
 		nr = 3
