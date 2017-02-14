@@ -38,7 +38,7 @@ def main_XMAP(argv=None):
 	SVG = SVG_properties(data_type, ref_begin_idx, ref_distance)
 	cmap = cmap_parse(ref_file)
 	with open(track_file) as f:
-		tracks = f.readlines()
+		tracks = [t.replace("\r","").replace("\n","") for t in f.readlines()]
 	xmaps = []
 	bnxs = []
 	for i in range(7, len(argv), 2):
