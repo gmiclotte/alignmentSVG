@@ -509,7 +509,7 @@ def ltkmer_partial_svg(SVG):
 	svg = ''
 	begin = SVG.begin - 1
 	end = begin
-	for pos in ltkmer_parse('21_partial_results.txt'):
+	for pos in ltkmer_parse(SVG.kmer_count):
 		if end < pos:
 			svg += ltkmer_rect(SVG, begin, end - begin)
 			begin = pos

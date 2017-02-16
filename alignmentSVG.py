@@ -50,15 +50,16 @@ def main_SAM(argv=None):
 	if argv == None:
 		argv = sys.argv
 	if len(argv) < 8:
-		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance sorted.sam track1 reads1.fastq <track2 reads2.fastq ...>')
+		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance kmer_count sorted.sam track1 reads1.fastq <track2 reads2.fastq ...>')
 		exit()
 	#specify input, can be changed to cl options of course
 	reference_file = argv[2]
 	ref_id = int(argv[3])
 	SVG = SVG_properties(argv[1], int(argv[4]), int(argv[5]))
-	sam_file = argv[6]
-	tracks = [argv[i] for i in range(7, len(argv), 2)] # this can be several files, each will create a new alignment track
-	read_files = [argv[i] for i in range(8, len(argv), 2)] # this can be several files, each will create a new alignment track
+	SVG.kmer_count = argv[6]
+	sam_file = argv[7]
+	tracks = [argv[i] for i in range(8, len(argv), 2)] # this can be several files, each will create a new alignment track
+	read_files = [argv[i] for i in range(9, len(argv), 2)] # this can be several files, each will create a new alignment track
 	#parse input
 	references = [Sequence(s[0], s[1]) for s in fasta_parse(reference_file)]
 	sam_entries = sam_parse(sam_file)
