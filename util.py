@@ -273,7 +273,6 @@ class SVG_properties:
 		self.view_range = [self.begin, self.begin + self.dist]
 		self.track_distance = 10
 		self.line_distance = 1
-		self.ltkmer = True
 		self.type = 'SAM'
 	
 	def init_xmap(self):
