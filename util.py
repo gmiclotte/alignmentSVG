@@ -238,13 +238,13 @@ class SVG_properties:
 		# draw text or not
 		self.text = False
 		# image borders
-		base_border = 1
-		self.border = {	'left' : base_border,
-				'lefttext' : base_border,
-				'right' : base_border,
-				'top' : base_border,
-				'toptext' : base_border,
-				'bottom' : base_border
+		self.base_border = 1
+		self.border = {	'left' : self.base_border,
+				'lefttext' : self.base_border,
+				'right' : self.base_border,
+				'top' : self.base_border,
+				'toptext' : self.base_border,
+				'bottom' : self.base_border
 		}
 		self.ltkmer = False
 		# data type specific settings
@@ -263,7 +263,7 @@ class SVG_properties:
 				'lefttext' : 15,
 				'right' : 26,
 				'top' : 100,
-				'toptext' : base_border,
+				'toptext' : self.base_border,
 				'bottom' : 10
 		}
 		self.min_separation = 5
