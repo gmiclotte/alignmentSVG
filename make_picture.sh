@@ -18,8 +18,6 @@ breakpoint=${6}
 
 # k-mer size
 k=21
-# contig number
-contig_nr=0
 
 # location of the python script
 alignmentSVG_py=
