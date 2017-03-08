@@ -23,6 +23,7 @@ k=21
 alignmentSVG_py=
 # location of the GNUplot file
 plotkmers=
+plotkmers_peak="${plotkmers}_peak"
 # input directory
 input_dir=.
 # output directory
@@ -55,8 +56,7 @@ gnuplot4 -e "kmer_count='${kmer_count}'" -e "ymax='${ymax}'" -e "start='${start}
 
 python "${alignmentSVG_py}" "SAM" "${contig}" "${contig_idx}" "${start}" "${len}" "${kmer_temp}" "${input_dir}/sorted.sam" "${tracks[@]}" > "${temp2}"
 str="<g style=\"fill:none; color:red; stroke:currentColor; stroke-width:1.00; stroke-linecap:butt; stroke-linejoin:miter\"><g transform=\"translate(275.5,21.8)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:11.00pt; text-anchor:end\"><text>${k}-mer coverage</text></g><path stroke='rgb( 27, 158, 119)' d='M283.8,17.7 L326.0,17.7'/></g>"
-echo $(head -n10 "${temp1}") $(grep -v svg "${temp2}") $str $(tail -n+10 "${temp1}") > "${output_dir}/${name}.svg"
+echo $(head -n-1 "${temp2}") $str $(tail -n+10 "${temp1}") > "${output_dir}/${name}.svg"
 sed -i 's/></>\n</g' "${output_dir}/${name}.svg"
-sed -i 's/ width=".*" height="100" viewBox="0 0 .* 100"//g' "${output_dir}/${name}.svg"
 svgo "${output_dir}/${name}.svg" "${output_dir}/${name}.min.svg"
 xdg-open "${output_dir}/${name}.min.svg" &
