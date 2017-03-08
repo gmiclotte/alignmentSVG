@@ -295,7 +295,6 @@ class SVG_properties:
 		return '\"fill:' + colour + ';stroke:black;stroke-width:0;fill-opacity:1.0;stroke-opacity:1.0\"'
 
 def add_svg_rect(SVG, x, y, width, height, style):
-	SVG.depth = y + height if y + height > SVG.depth else SVG.depth
 	return '\n' + '<rect x=\"' + str(x) + '\" y=\"' + str(y) + '\" width=\"' + str(width) + '\" height=\"' + str(height) + '\" style=' + str(style) + '/>'
 
 def add_svg_empty_space(SVG, distance):
@@ -324,6 +323,7 @@ def add_nicks(SVG, cmap, y, h):
 		x = SVG.border['left'] + (nick - SVG.begin - SVG.zoom / 2) / SVG.zoom
 		w = SVG.nick_width
 		svg += add_svg_rect(SVG, x, y, w, h, SVG.track_style(SVG.nick_colour))
+		update_depth(SVG, y, h)
 		#svg += '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"4\" transform=\"translate(' + str(x) + ')\"> <text y=\"0px\">' + str(nick) + ' ' + str(x) + '</text></g>'
 	return svg
 
@@ -347,6 +347,7 @@ def xmap_partial_svg(SVG, cmap, bnx, piles, max_subtracks, track_names, track):
 			x = trimmed_start
 			w = trimmed_end - trimmed_start
 			svg += add_svg_rect(SVG, x, y, w , h, SVG.track_style(SVG.line_colour[track]))
+			update_depth(SVG, y, h)
 			svg += add_nicks(SVG, [cmap[int(nick)] for nick, label in e.Alignment], y, h)
 			'''
 			for nick, label in e.Alignment:
@@ -412,6 +413,9 @@ def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
 			seq_idx += 1
 	return svg
 
+def update_depth(SVG, y, h):
+	SVG.depth = y + h if y + h > SVG.depth else SVG.depth
+
 def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track):
 	eprint('Drawing track: ' + track_names[track] + '.')
 	svg = ''
@@ -429,6 +433,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 			w = SVG.border['left'] + min(rel_end, SVG.dist) * SVG.block_size - x
 			svg += '\n'
 			svg += add_svg_rect(SVG, x, y, w , h, SVG.track_style(SVG.line_colour[track%2]))
+			update_depth(SVG, y, h)
 			ref_start = SVG.view_range[0] + rel_pos
 			ref_end = SVG.view_range[0] + rel_pos + e.len
 			ref_substr = ref.seq[ref_start:]
@@ -462,6 +467,7 @@ def reference_partial_svg_sam(SVG, ref):
 	w = SVG.dist * SVG.block_size
 	h = SVG.block_size
 	svg = add_svg_rect(SVG, x, y, w, h, SVG.track_style(SVG.reference_colour))
+	update_depth(SVG, y, h)
 	ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
 	svg += draw_ref_seq(SVG, x, y, ref_substr, ref_substr, 0, SVG.track_style(SVG.reference_colour))
 	svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.border['top'] + SVG.depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(SVG.font_size) + "pt; text-anchor:middle\"> <text>Ref</text> </g>"
@@ -494,6 +500,7 @@ def reference_partial_svg_xmap(SVG, ref):
 	w = SVG.dist / SVG.zoom
 	h = SVG.reference_height
 	svg += add_svg_rect(SVG, x, y, w, h, SVG.track_style(SVG.reference_colour))
+	update_depth(SVG, y, h)
 	svg += add_nicks(SVG, ref, y, SVG.reference_height)
 	return svg
 
@@ -505,7 +512,9 @@ def ltkmer_rect(SVG, position, length):
 	eprint(w, wmax)
 	w = w if w < wmax else wmax
 	h = SVG.height - SVG.border['bottom'] - 10
-	return add_svg_rect(SVG, x, y, w, h, SVG.ltkmer_style)
+	svg = add_svg_rect(SVG, x, y, w, h, SVG.ltkmer_style)
+	update_depth(SVG, y, h)
+	return svg
 
 def ltkmer_partial_svg(SVG):
 	svg = ''
