@@ -301,13 +301,14 @@ def add_svg_empty_space(SVG, distance):
 	SVG.depth += distance
 
 def draw_ref_seq(SVG, x, y, ref, seq, start, cigar):
-	svg = ''
+	svg = '<g transform=\"translate(' + str(SVG.hshift_size) + ',' + str(y + SVG.vshift_size) + ')\" font-size=\"' + str(SVG.font_size) + '\" text-anchor=\"middle\">'
 	ref_idx = 0
 	seq_idx = start
 	while seq_idx < len(seq) and ref_idx < len(ref):
-		svg += draw_acgt(SVG, x + ref_idx * SVG.block_size, y, seq[seq_idx])
+		svg += '<text x=\"' + str(ref_idx * SVG.block_size) + '\" >' + str(seq[seq_idx]) + '</text>'
 		ref_idx += 1
 		seq_idx += 1
+	svg += '</g>'
 	return svg
 
 def draw_acgt(SVG, x, y, c):
@@ -466,10 +467,12 @@ def reference_partial_svg_sam(SVG, ref):
 	y = SVG.border['top']
 	w = SVG.dist * SVG.block_size
 	h = SVG.block_size
-	svg = add_svg_rect(SVG, x, y, w, h, SVG.track_style(SVG.reference_colour))
+	svg = '<g transform=\"translate(' + str(x) + ',' + str(y) + ')\">\n'
+	svg += add_svg_rect(SVG, 0, 0, w, h, SVG.track_style(SVG.reference_colour))
 	update_depth(SVG, y, h)
 	ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
-	svg += draw_ref_seq(SVG, x, y, ref_substr, ref_substr, 0, SVG.track_style(SVG.reference_colour))
+	svg += draw_ref_seq(SVG, 0, 0, ref_substr, ref_substr, 0, SVG.track_style(SVG.reference_colour))
+	svg += '</g>\n'
 	svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.border['top'] + SVG.depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(SVG.font_size) + "pt; text-anchor:middle\"> <text>Ref</text> </g>"
 	return svg
 
