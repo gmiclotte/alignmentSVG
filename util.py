@@ -308,7 +308,7 @@ def draw_ref_seq(SVG, x, y, ref, seq, start, cigar):
 		svg += '<text x=\"' + str(ref_idx * SVG.block_size) + '\" >' + str(seq[seq_idx]) + '</text>'
 		ref_idx += 1
 		seq_idx += 1
-	svg += '</g>'
+	svg += '</g>\n'
 	return svg
 
 def draw_acgt(SVG, x, y, c):
@@ -383,11 +383,11 @@ def xmap_partial_svg(SVG, cmap, bnx, piles, max_subtracks, track_names, track):
 		x = SVG.border['lefttext']
 		y = SVG.depth - (subtracks * (SVG.line_distance + SVG.line_height) - SVG.line_distance) / 2
 		svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>' + tracks[track] + '</text>'
-		svg += '\n' + '</g>'
+		svg += '\n</g>'
 	return svg
 
 def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
-	svg = ''
+	svg = '<g transform=\"translate(' + str(0) + ', ' + str(SVG.vshift_size) + ')\" font-size=\"' + str(SVG.font_size) + '\" text-anchor=\"middle\">'
 	ref_idx = 0
 	seq_idx = 0
 	cig_idx = 0
@@ -398,20 +398,21 @@ def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
 		if c == 'D':
 			xp = x + ref_idx * SVG.block_size
 			if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
-				svg += draw_acgt(SVG, xp, y, '-')
+				svg += '<text x=\"' + str(xp + SVG.block_size / 2) + '\">-</text>'
 			ref_idx += 1
 		elif c == 'I':
 			xp = x + ref_idx * SVG.block_size - 1
 			if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
-				svg += '<rect x=\"' + str(xp) + '\" y=\"' + str(y) + '\" width=\"' + str(2) + '\" height=\"' + str(SVG.block_size) + '\" style=' + SVG.track_style(SVG.label_colour) + '/>'
+				svg += '<rect x=\"' + str(xp) + '\" y=\"' + str(-SVG.vshift_size) + '\" width=\"' + str(2) + '\" height=\"' + str(SVG.block_size) + '\" style=' + SVG.track_style(SVG.label_colour) + '/>'
 			seq_idx += 1
 		elif c == 'M':
 			xp = x + ref_idx * SVG.block_size
 			if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
 				if (not diff_only) or seq[seq_idx] != ref[ref_idx]:
-					svg += draw_acgt(SVG, xp, y, seq[seq_idx])
+					svg += '<text x=\"' + str(xp + SVG.block_size / 2) + '\">' + str(seq[seq_idx]) + '</text>'
 			ref_idx += 1
 			seq_idx += 1
+	svg += '</g>\n'
 	return svg
 
 def update_depth(SVG, y, h):
@@ -433,7 +434,8 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 			x = SVG.border['left'] + max(rel_pos, 0) * SVG.block_size
 			w = SVG.border['left'] + min(rel_end, SVG.dist) * SVG.block_size - x
 			svg += '\n'
-			svg += add_svg_rect(SVG, x, y, w , h, SVG.track_style(SVG.line_colour[track%2]))
+			svg += '<g transform=\"translate(' + str(0) + ',' + str(y) + ')\">\n'
+			svg += add_svg_rect(SVG, x, 0, w , h, SVG.track_style(SVG.line_colour[track%2]))
 			update_depth(SVG, y, h)
 			ref_start = SVG.view_range[0] + rel_pos
 			ref_end = SVG.view_range[0] + rel_pos + e.len
@@ -443,7 +445,8 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 				seq = seq[e.cigar[0][0]:]
 			if e.cigar[-1][1] == 'S' or  e.cigar[-1][1] == 'H':
 				seq = seq[:len(seq) - e.cigar[-1][0]]
-			svg += draw_seq(SVG, SVG.border['left'] + rel_pos * SVG.block_size, y, ref_substr, seq, e.cigar)
+			svg += draw_seq(SVG, SVG.border['left'] + rel_pos * SVG.block_size, 0, ref_substr, seq, e.cigar)
+			svg += '</g>\n'
 		add_svg_empty_space(SVG, SVG.line_distance)
 		if subtracks == max_subtracks:
 			break
@@ -491,13 +494,13 @@ def reference_partial_svg_xmap(SVG, ref):
 			x = SVG.text_shift + SVG.border['left'] + i * (SVG.dist / SVG.zoom - SVG.text_shift) / (nr - 1)
 			y = SVG.border['toptext']
 			svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>' + text + '</text>'
-		svg += '\n' + '</g>'
+		svg += '\n</g>'
 		#reference string
 		svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
 		x = SVG.border['lefttext']
 		y = SVG.border['top'] + SVG.reference_height / 2
 		svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>Ref</text>'
-		svg += '\n' + '</g>'
+		svg += '\n</g>'
 	x = SVG.border['left']
 	y = SVG.border['top']
 	w = SVG.dist / SVG.zoom
