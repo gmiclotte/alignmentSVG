@@ -555,11 +555,16 @@ def start_partial_svg(SVG):
 	elif SVG.type == 'XMAP':
 		w = SVG.dist / SVG.zoom + SVG.border['left'] + SVG.border['right']
 	h = SVG.height
-	svg = '<svg width=\"' + str(w) + '\" height=\"' + str(h) + '\">'
-	svg += '\n' + '<rect x=\"0\" y=\"0\" width=\"' + str(w) + '\" height=\"' + str(h) + '\" style=' + SVG.background_style + '/>'
+	svg = '<svg viewBox=\"0 0 ' + str(w) + ' ' + str(h) + '\"'
+	svg += 'xmlns=\"http://www.w3.org/2000/svg\"'
+	svg += 'xmlns:xlink=\"http://www.w3.org/1999/xlink\"'
+	svg += '>\n'
+	svg += '<rect x=\"0\" y=\"0\" width=\"' + str(w) + '\" height=\"' + str(h) + '\" style=' + SVG.background_style + '/>\n'
+	svg += '<g transform=\"translate(0,0)\" id=\"alignmentSVG\">\n'
 	return svg
 
 def end_partial_svg():
-	svg = '\n' + '</svg>'
+	svg = '</g>\n'
+	svg += '</svg>'
 	return svg
 
