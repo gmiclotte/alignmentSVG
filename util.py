@@ -262,13 +262,16 @@ class SVG_properties:
 		self.border = {	'left' : 20.5,
 				'lefttext' : 15,
 				'right' : 26,
-				'top' : 100,
+				'top' : 0,
 				'toptext' : self.base_border,
 				'bottom' : 10
 		}
 		self.min_separation = 5
 		self.block_size = 12.55
-		self.font_size = 12.0 / 10.0 * self.block_size
+		self.font_size = self.block_size * 1.2
+		self.hshift_size = self.block_size * 0.5
+		self.vshift_size = self.block_size * 0.9
+		
 		self.line_height = self.block_size
 		self.view_range = [self.begin, self.begin + self.dist]
 		self.track_distance = 10
