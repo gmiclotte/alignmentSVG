@@ -30,12 +30,12 @@ ymax2=${11}
 k=21
 
 # location of the python script
-alignmentSVG_py=/home/gmiclott/Documents/Tools/alignmentSVG/alignmentSVG.py
+alignmentSVG_py=
 # location of the GNUplot file
-plotkmers=/home/gmiclott/Documents/Tools/alignmentSVG/plotkmers
+plotkmers=
 plotkmers_peak="${plotkmers}_peak"
 #location of GNUplot 4
-gnuplot4=gnuplot4
+gnuplot4=gnuplot
 #location of python 2.7
 python=python
 # input directory
@@ -45,29 +45,43 @@ output_dir=.
 # length of the view range, only 100 is supported out of the box
 len=100
 
-# tracks
-# add as many as you like here
+# add as many tracks as you like here, you need 3 lines for each
 tracks[0]="Uncorrected"
 tracks[1]="${input_dir}/mapped.fastq"
-tracks[2]="Corrected"
-tracks[3]="${input_dir}/mappedCorrected.fastq"
-#tracks[4]="Another Corrected"
-#tracks[5]="${input_dir}/mappedOtherCorrected.fastq"
+tracks[2]="-"
+
+tracks[3]="Corrected"
+tracks[4]="${input_dir}/mappedCorrected.fastq"
+tracks[5]=${kmer_count}
+
+#tracks[6]="Another Corrected"
+#tracks[7]="${input_dir}/mappedAnotherCorrected.fastq"
+#tracks[8]=another_kmer_count.txt
+
+# precompute kmercounts
+for ((i=2; i<${#tracks[*]}; i += 3));
+do
+	if [[ ${tracks[i]} != "-" ]]; then
+		temp_kmer_count=${tracks[i]}
+		temp_kmer_count="${input_dir}/${temp_kmer_count}"
+		kmer_temp=${output_dir}/${k}_${start}_${len}_${i}.txt
+		tail -n +$((${start}+1)) "${temp_kmer_count}" | head -n ${len} > "${kmer_temp}"
+		cut -f1 -d "" "${kmer_temp}" | sort -nk3 | tail -n1
+		tracks[${i}]=${kmer_temp}
+	fi
+done
 
 #compute some paths and variables
-kmer_count="${input_dir}/${kmer_count}"
-kmer_temp=${output_dir}/${k}_${start}_${len}_results.txt
 temp1="${output_dir}/temp1.svg"
 temp2="${output_dir}/temp2.svg"
-tail -n +$((${start}+1)) "${kmer_count}" | head -n ${len} > "${kmer_temp}"
-cut -f1 -d "" "${kmer_temp}" | sort -nk3 | tail -n1
 end=$((${start}+${len}))
+
 
 #run gnuplot4 to make svg
 ${gnuplot4} -e "kmer_count='${kmer_count}'" -e "ymax='${ymax}'" -e "start='${start}'" -e "end='${end}'" -e "breakpoint='${breakpoint}'" -e "ytic1='${ytic1}'" -e "ytic2='${ytic2}'" -e "ymax1='${ymax1}'" -e "ymin2='${ymin2}'" -e "ymax2='${ymax2}'" -e "temp1='${temp1}'" "${plotkmers_peak}"
 
 #run python script to make svg
-${python} "${alignmentSVG_py}" "SAM" "${contig}" "${contig_idx}" "${start}" "${len}" "${kmer_temp}" "${input_dir}/sorted.sam" "${tracks[@]}" > "${temp2}"
+${python} "${alignmentSVG_py}" "SAM" "${contig}" "${contig_idx}" "${start}" "${len}" "${input_dir}/sorted.sam" "${tracks[@]}" > "${temp2}"
 
 #concat both svg files
 str="<g transform=\"translate(0,0)\" id=\"gnuplotkey\"><g style=\"fill:none; color:red; stroke:currentColor; stroke-width:1.00; stroke-linecap:butt; stroke-linejoin:miter\"><g transform=\"translate(275.5,21.8)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:11.00pt; text-anchor:end\"><text>${k}-mer coverage</text></g><path stroke='rgb( 27, 158, 119)' d='M283.8,17.7 L326.0,17.7'/></g></g>"

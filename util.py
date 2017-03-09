@@ -246,7 +246,6 @@ class SVG_properties:
 				'toptext' : self.base_border,
 				'bottom' : self.base_border
 		}
-		self.ltkmer = False
 		# data type specific settings
 		self.type = data_type.upper()
 		if self.type == 'SAM':
@@ -424,9 +423,10 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 	add_svg_empty_space(SVG, SVG.track_distance)
 	prev_depth = SVG.depth
 	subtracks = 0
+	svg += '<g transform=\"translate(' + str(0) + ',' + str(prev_depth) + ')\" id=\"' + track_names[track] + '\">\n'
 	for pile in piles:
 		subtracks += 1
-		y = SVG.depth
+		y = SVG.depth - prev_depth
 		h = SVG.block_size
 		for e in pile:
 			rel_pos = e.pos - SVG.begin
@@ -436,7 +436,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 			svg += '\n'
 			svg += '<g transform=\"translate(' + str(0) + ',' + str(y) + ')\">\n'
 			svg += add_svg_rect(SVG, x, 0, w , h, SVG.track_style(SVG.line_colour[track%2]))
-			update_depth(SVG, y, h)
+			update_depth(SVG, prev_depth + y, h)
 			ref_start = SVG.view_range[0] + rel_pos
 			ref_end = SVG.view_range[0] + rel_pos + e.len
 			ref_substr = ref.seq[ref_start:]
@@ -452,7 +452,9 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 			break
 	#correct for depth after last subtrack
 	add_svg_empty_space(SVG, -SVG.line_distance)
-	svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.depth + prev_depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(SVG.font_size) + "pt; text-anchor:middle\"> <text>" + track_names[track] + "</text> </g>"
+	svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.depth - prev_depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(SVG.font_size) + "pt; text-anchor:middle\"> <text>" + track_names[track] + "</text> </g>"
+	svg += ltkmer_partial_svg(SVG, track, SVG.depth - prev_depth)
+	svg += '</g>\n'
 	return svg
 
 def reference_partial_svg(SVG, ref):
@@ -510,29 +512,28 @@ def reference_partial_svg_xmap(SVG, ref):
 	svg += add_nicks(SVG, ref, y, SVG.reference_height)
 	return svg
 
-def ltkmer_rect(SVG, position, length):
+def ltkmer_rect(SVG, position, length, h):
 	x = SVG.border['left'] + (position - SVG.begin) * SVG.block_size
-	y = 0
 	w = length * SVG.block_size
 	wmax = SVG.border['left'] + SVG.dist * SVG.block_size - x
 	eprint(w, wmax)
 	w = w if w < wmax else wmax
-	h = SVG.height - SVG.border['bottom'] - 0
-	svg = add_svg_rect(SVG, x, y, w, h, SVG.ltkmer_style)
-	update_depth(SVG, y, h)
+	svg = add_svg_rect(SVG, x, 0, w, h, SVG.ltkmer_style)
 	return svg
 
-def ltkmer_partial_svg(SVG):
+def ltkmer_partial_svg(SVG, track, h):
+	if SVG.kmer_count[track] == '-':
+		return ''
 	svg = ''
 	begin = -1
 	end = begin
-	for pos in ltkmer_parse(SVG.kmer_count):
+	for pos in ltkmer_parse(SVG.kmer_count[track]):
 		if end < pos:
 			if begin > 0:
-				svg += ltkmer_rect(SVG, begin, end - begin)
+				svg += ltkmer_rect(SVG, begin, end - begin, h)
 			begin = pos
 		end = pos + 21
-	svg += ltkmer_rect(SVG, begin, end - begin)
+	svg += ltkmer_rect(SVG, begin, end - begin, h)
 	return svg
 
 def make_svg(SVG, ref, alnms, tracks, track_names):
@@ -552,8 +553,6 @@ def make_svg(SVG, ref, alnms, tracks, track_names):
 			piles = pile_entries(SVG, alnms[i])
 			svg += xmap_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i)
 	SVG.height = SVG.depth + SVG.border['bottom']
-	if SVG.ltkmer:
-		svg += ltkmer_partial_svg(SVG)
 	return start_partial_svg(SVG) + svg + end_partial_svg()
 
 def start_partial_svg(SVG):
