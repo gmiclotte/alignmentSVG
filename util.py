@@ -231,7 +231,7 @@ class SVG_properties:
 		self.label2_colour = '#0000ff'
 		self.background_style = '\"fill:white;fill-opacity:1.0;\"'
 		self.text_style = '\"writing-mode: bt;text-anchor: middle\"'
-		self.ltkmer_style = '\"fill-opacity:0.0;stroke-width:1;stroke:black\"'
+		self.ltkmer_style = '\"fill-opacity:0.0;stroke-width:1;stroke:black\" id=\"ltkmer\"'
 		# [current|max] height of the picture
 		self.depth = 0
 		self.height = 3000
