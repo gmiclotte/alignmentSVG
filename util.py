@@ -231,7 +231,7 @@ class SVG_properties:
 		self.label2_colour = '#0000ff'
 		self.background_style = '\"fill:white;fill-opacity:1.0;\"'
 		self.text_style = '\"writing-mode: bt;text-anchor: middle\"'
-		self.ltkmer_style = '\"fill:gray;fill-opacity:0.5;\"'
+		self.ltkmer_style = '\"fill-opacity:0.0;stroke-width:1;stroke:black\"'
 		# [current|max] height of the picture
 		self.depth = 0
 		self.height = 3000
@@ -512,23 +512,24 @@ def reference_partial_svg_xmap(SVG, ref):
 
 def ltkmer_rect(SVG, position, length):
 	x = SVG.border['left'] + (position - SVG.begin) * SVG.block_size
-	y = 10
+	y = 0
 	w = length * SVG.block_size
 	wmax = SVG.border['left'] + SVG.dist * SVG.block_size - x
 	eprint(w, wmax)
 	w = w if w < wmax else wmax
-	h = SVG.height - SVG.border['bottom'] - 10
+	h = SVG.height - SVG.border['bottom'] - 0
 	svg = add_svg_rect(SVG, x, y, w, h, SVG.ltkmer_style)
 	update_depth(SVG, y, h)
 	return svg
 
 def ltkmer_partial_svg(SVG):
 	svg = ''
-	begin = SVG.begin - 1
+	begin = -1
 	end = begin
 	for pos in ltkmer_parse(SVG.kmer_count):
 		if end < pos:
-			svg += ltkmer_rect(SVG, begin, end - begin)
+			if begin > 0:
+				svg += ltkmer_rect(SVG, begin, end - begin)
 			begin = pos
 		end = pos + 21
 	svg += ltkmer_rect(SVG, begin, end - begin)
@@ -567,12 +568,14 @@ def start_partial_svg(SVG):
 	svg += ' xmlns=\"http://www.w3.org/2000/svg\"'
 	svg += ' xmlns:xlink=\"http://www.w3.org/1999/xlink\"'
 	svg += '>\n'
-	svg += '<rect x=\"0\" y=\"0\" width=\"' + str(w) + '\" height=\"' + str(h) + '\" style=' + SVG.background_style + '/>\n'
+	svg += '<rect x=\"0\" y=\"0\" width=\"110%\" height=\"110%\" style=' + SVG.background_style + '/>\n'
+	svg += '<g transform=\"translate(0,0)\" id=\"fullSVG\">'
 	svg += '<g transform=\"translate(0,0)\" id=\"alignmentSVG\">\n'
 	return svg
 
 def end_partial_svg():
 	svg = '</g>\n'
+	svg += '</g>\n'
 	svg += '</svg>'
 	return svg
 
