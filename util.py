@@ -221,7 +221,7 @@ def pile_entries(SVG, entries):
 	return piles
 
 class SVG_properties:
-	def __init__(self, data_type, begin, dist):
+	def __init__(self, data_type, begin, dist, text):
 		# zoom location
 		self.begin = begin
 		self.dist = dist
@@ -238,7 +238,7 @@ class SVG_properties:
 		self.depth = 0
 		self.height = 3000
 		# draw text or not
-		self.text = False
+		self.text = text
 		# image borders
 		self.base_border = 1
 		self.border = {	'left' : self.base_border,
@@ -272,12 +272,17 @@ class SVG_properties:
 		self.font_size = self.block_size * 1.2
 		self.hshift_size = self.block_size * 0.5
 		self.vshift_size = self.block_size * 0.9
-
 		self.line_height = self.block_size
 		self.view_range = [self.begin, self.begin + self.dist]
 		self.track_distance = 10
 		self.line_distance = 1
-		self.type = 'SAM'
+		if self.text:
+			self.border['top'] += 6 * self.block_size
+			self.border['toptext'] -= 3 * self.block_size
+			self.text_shift = -self.block_size
+			self.zoom = 1 / self.block_size
+			self.reference_height = self.line_height
+			self.ref_loc_nr = 5
 
 	def init_xmap(self):
 		self.max_subtracks = 20
@@ -291,6 +296,8 @@ class SVG_properties:
 		self.track_distance = 10
 		self.line_height = 6
 		self.line_distance = 2
+		self.ref_loc_nr = 3
+		self.font_size = 8
 
 	def track_style(self, colour):
 		return '\"fill:' + colour + ';stroke:black;stroke-width:0;fill-opacity:1.0;stroke-opacity:1.0\"'
@@ -467,6 +474,27 @@ def reference_partial_svg(SVG, ref):
 	elif SVG.type == 'XMAP':
 		return reference_partial_svg_xmap(SVG, ref)
 
+def reference_location(SVG):
+	svg = '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"' + str(SVG.font_size) + '\">'
+	nr = SVG.ref_loc_nr
+	for i in range(nr):
+		#positions
+		if SVG.type == 'SAM':
+			text = str(int((SVG.begin + i * (SVG.dist - 1) / (nr - 1)))) + 'bp'
+		elif SVG.type == 'XMAP':
+			text = str(int((SVG.begin + i * (SVG.dist - 1) / (nr - 1)) / 1000)) + 'kbp'
+		x = SVG.text_shift + SVG.border['left'] + i * ((SVG.dist - 2) / SVG.zoom - SVG.text_shift) / (nr - 1)
+		y = SVG.border['toptext']
+		svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>' + text + '</text>'
+	svg += '\n</g>'
+	#reference string
+	svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
+	x = SVG.border['lefttext']
+	y = SVG.border['top'] + SVG.reference_height / 2
+	svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>Ref</text>'
+	svg += '\n</g>'
+	return svg
+
 def reference_partial_svg_sam(SVG, ref):
 	eprint('Drawing reference track.')
 	if len(ref.seq) < SVG.view_range[1]:
@@ -477,6 +505,8 @@ def reference_partial_svg_sam(SVG, ref):
 	w = SVG.dist * SVG.block_size
 	h = SVG.block_size
 	svg = '<g transform=\"translate(' + str(x) + ',' + str(y) + ')\">\n'
+	if SVG.text:
+		svg += reference_location(SVG)
 	svg += add_svg_rect(SVG, 0, 0, w, h, SVG.track_style(SVG.reference_colour))
 	update_depth(SVG, y, h)
 	ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
@@ -492,21 +522,7 @@ def reference_partial_svg_xmap(SVG, ref):
 		SVG.view_range = [SVG.begin, ref[-1]]
 	svg = ''
 	if SVG.text:
-		svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
-		nr = 3
-		for i in range(nr):
-			#positions
-			text = str(int((SVG.begin + i * SVG.dist / (nr - 1)) / 1000)) + 'kb'
-			x = SVG.text_shift + SVG.border['left'] + i * (SVG.dist / SVG.zoom - SVG.text_shift) / (nr - 1)
-			y = SVG.border['toptext']
-			svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>' + text + '</text>'
-		svg += '\n</g>'
-		#reference string
-		svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
-		x = SVG.border['lefttext']
-		y = SVG.border['top'] + SVG.reference_height / 2
-		svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(y) + ')rotate(270)\" style=' + SVG.text_style + '>Ref</text>'
-		svg += '\n</g>'
+		reference_location(SVG)
 	x = SVG.border['left']
 	y = SVG.border['top']
 	w = SVG.dist / SVG.zoom
