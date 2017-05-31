@@ -22,6 +22,8 @@ from __future__ import print_function
 import sys
 import re
 
+from align import NW
+
 def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
@@ -63,7 +65,7 @@ class Sequence:
 class XmapEntry:
 	def __init__(self):
 		self.Alignment = []
-	
+
 	def set_props(self, line):
 		props = line.strip().split('\t')
 		self.XmapEntryID = int(props[0]) - 1
@@ -255,7 +257,7 @@ class SVG_properties:
 		else:
 			eprint('Unsupported data type:' + self.type)
 			exit()
-	
+
 	def init_sam(self):
 		self.max_subtracks = 200
 		self.border = {	'left' : 20.5,
@@ -270,13 +272,13 @@ class SVG_properties:
 		self.font_size = self.block_size * 1.2
 		self.hshift_size = self.block_size * 0.5
 		self.vshift_size = self.block_size * 0.9
-		
+
 		self.line_height = self.block_size
 		self.view_range = [self.begin, self.begin + self.dist]
 		self.track_distance = 10
 		self.line_distance = 1
 		self.type = 'SAM'
-	
+
 	def init_xmap(self):
 		self.max_subtracks = 20
 		self.min_separation = 1000
@@ -289,7 +291,7 @@ class SVG_properties:
 		self.track_distance = 10
 		self.line_height = 6
 		self.line_distance = 2
-	
+
 	def track_style(self, colour):
 		return '\"fill:' + colour + ';stroke:black;stroke-width:0;fill-opacity:1.0;stroke-opacity:1.0\"'
 
@@ -407,6 +409,7 @@ def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
 		elif c == 'M':
 			xp = x + ref_idx * SVG.block_size
 			if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
+				#eprint(seq_idx, ref_idx, seq[seq_idx], ref[ref_idx])
 				if (not diff_only) or seq[seq_idx] != ref[ref_idx]:
 					svg += '<text x=\"' + str(xp + SVG.block_size / 2) + '\">' + str(seq[seq_idx]) + '</text>'
 			ref_idx += 1
@@ -445,6 +448,9 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 				seq = seq[e.cigar[0][0]:]
 			if e.cigar[-1][1] == 'S' or  e.cigar[-1][1] == 'H':
 				seq = seq[:len(seq) - e.cigar[-1][0]]
+			ref_substr = ref_substr[:len(seq)]
+			#ref_substr = ref.seq[:len(seq)]
+			cigar = e.cigar if track == 0 else NW(ref_substr, seq)
 			svg += draw_seq(SVG, SVG.border['left'] + rel_pos * SVG.block_size, 0, ref_substr, seq, e.cigar)
 			svg += '</g>\n'
 		add_svg_empty_space(SVG, SVG.line_distance)
@@ -577,4 +583,3 @@ def end_partial_svg():
 	svg += '</g>\n'
 	svg += '</svg>'
 	return svg
-
