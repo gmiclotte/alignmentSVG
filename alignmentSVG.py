@@ -50,16 +50,20 @@ def main_SAM(argv=None):
 	if argv == None:
 		argv = sys.argv
 	if len(argv) < 7:
-		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance sorted.sam track1 reads1.fastq kmer_count1 <track2 reads2.fastq kmer_count2 ...>' + '\n' + 'Use \'-\' if no kmer_count file is provided.')
+		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance sorted.sam sam_track_idx track1 reads1.fastq kmer_count1 <track2 reads2.fastq kmer_count2 ...>'\
+		 	+ '\n' + 'Use \'-\' if no kmer_count file is provided.'\
+			+ '\n' + 'sam_track_idx is the 0-indexed track that corresponds to the SAM file, use -1 if not applicable.'\
+		)
 		exit()
 	#specify input, can be changed to cl options of course
 	reference_file = argv[2]
 	ref_id = int(argv[3])
 	SVG = SVG_properties(argv[1], int(argv[4]), int(argv[5]))
 	sam_file = argv[6]
-	tracks = [argv[i] for i in range(7, len(argv), 3)] # this can be several files, each will create a new alignment track
-	read_files = [argv[i] for i in range(8, len(argv), 3)]
-	SVG.kmer_count = [argv[i] for i in range(9, len(argv), 3)]
+	sam_track = int(argv[7])
+	tracks = [argv[i] for i in range(8, len(argv), 3)] # this can be several files, each will create a new alignment track
+	read_files = [argv[i] for i in range(9, len(argv), 3)]
+	SVG.kmer_count = [argv[i] for i in range(10, len(argv), 3)]
 	#parse input
 	references = [Sequence(s[0], s[1]) for s in fasta_parse(reference_file)]
 	sam_entries = sam_parse(sam_file)
@@ -71,7 +75,7 @@ def main_SAM(argv=None):
 			sequence = Sequence(s[0], s[1])
 			fasta[sequence.name] = sequence
 		reads += [fasta]
-	print(make_svg(SVG, references[ref_id], sam_entries, reads, tracks))
+	print(make_svg(SVG, references[ref_id], sam_entries, reads, tracks, sam_track))
 
 def main(argv=None):
 	if argv == None:

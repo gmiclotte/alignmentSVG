@@ -420,7 +420,7 @@ def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
 def update_depth(SVG, y, h):
 	SVG.depth = y + h if y + h > SVG.depth else SVG.depth
 
-def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track):
+def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, sam_track):
 	eprint('Drawing track: ' + track_names[track] + '.')
 	svg = ''
 	add_svg_empty_space(SVG, SVG.track_distance)
@@ -448,9 +448,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track)
 				seq = seq[e.cigar[0][0]:]
 			if e.cigar[-1][1] == 'S' or  e.cigar[-1][1] == 'H':
 				seq = seq[:len(seq) - e.cigar[-1][0]]
-			ref_substr = ref_substr[:len(seq)]
-			#ref_substr = ref.seq[:len(seq)]
-			cigar = e.cigar if track == 0 else NW(ref_substr, seq)
+			cigar = e.cigar if track == sam_track else NW(ref_substr[:len(seq)], seq)
 			svg += draw_seq(SVG, SVG.border['left'] + rel_pos * SVG.block_size, 0, ref_substr, seq, cigar)
 			svg += '</g>\n'
 		add_svg_empty_space(SVG, SVG.line_distance)
@@ -542,7 +540,7 @@ def ltkmer_partial_svg(SVG, track, h):
 	svg += ltkmer_rect(SVG, begin, end - begin, h)
 	return svg
 
-def make_svg(SVG, ref, alnms, tracks, track_names):
+def make_svg(SVG, ref, alnms, tracks, track_names, alnms_track = -1):
 	svg = reference_partial_svg(SVG, ref)
 	ref_depth = SVG.depth
 	# max total - used - bottom border - track borders
@@ -554,7 +552,7 @@ def make_svg(SVG, ref, alnms, tracks, track_names):
 	for i in range(len(tracks)):
 		track = tracks[i]
 		if SVG.type == 'SAM':
-			svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i)
+			svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i, alnms_track)
 		elif SVG.type == 'XMAP':
 			piles = pile_entries(SVG, alnms[i])
 			svg += xmap_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i)
