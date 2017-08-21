@@ -427,7 +427,7 @@ def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
 def update_depth(SVG, y, h):
 	SVG.depth = y + h if y + h > SVG.depth else SVG.depth
 
-def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, sam_track):
+def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, extra):
 	eprint('Drawing track: ' + track_names[track] + '.')
 	svg = ''
 	add_svg_empty_space(SVG, SVG.track_distance)
@@ -455,7 +455,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track,
 				seq = seq[e.cigar[0][0]:]
 			if e.cigar[-1][1] == 'S' or  e.cigar[-1][1] == 'H':
 				seq = seq[:len(seq) - e.cigar[-1][0]]
-			cigar = e.cigar if track == sam_track else NW(ref_substr[:len(seq)], seq)
+			cigar = e.cigar if track == extra['sam_track'] else NW(ref_substr[:len(seq)], seq)
 			svg += draw_seq(SVG, SVG.border['left'] + rel_pos * SVG.block_size, 0, ref_substr, seq, cigar)
 			svg += '</g>\n'
 		add_svg_empty_space(SVG, SVG.line_distance)
@@ -468,9 +468,9 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track,
 	svg += '</g>\n'
 	return svg
 
-def reference_partial_svg(SVG, ref):
+def reference_partial_svg(SVG, ref, extra):
 	if SVG.type == 'SAM':
-		return reference_partial_svg_sam(SVG, ref)
+		return reference_partial_svg_sam(SVG, ref, extra)
 	elif SVG.type == 'XMAP':
 		return reference_partial_svg_xmap(SVG, ref)
 
@@ -495,7 +495,7 @@ def reference_location(SVG):
 	svg += '\n</g>'
 	return svg
 
-def reference_partial_svg_sam(SVG, ref):
+def reference_partial_svg_sam(SVG, ref, extra):
 	eprint('Drawing reference track.')
 	if len(ref.seq) < SVG.view_range[1]:
 		SVG.dist = len(ref.seq) - SVG.begin
@@ -511,6 +511,16 @@ def reference_partial_svg_sam(SVG, ref):
 	update_depth(SVG, y, h)
 	ref_substr = ref.seq[SVG.view_range[0]:SVG.view_range[1]]
 	svg += draw_ref_seq(SVG, 0, 0, ref_substr, ref_substr, 0, SVG.track_style(SVG.reference_colour))
+	for contig in extra['contigs']:
+		for idx in [0, 1]:
+			if SVG.view_range[0] < contig[idx] and contig[idx] < SVG.view_range[1]:
+				x = (contig[idx] - SVG.view_range[0] + 1) * SVG.block_size - 1
+				svg += add_svg_rect(SVG, x, 0, 2, SVG.block_size, SVG.track_style(SVG.label_colour))
+				if idx == 1:
+					x = x + 1 - SVG.block_size / 2
+				svg += add_svg_rect(SVG, x, -2, SVG.block_size / 2 + 1, 2, SVG.track_style(SVG.label_colour))
+				svg += add_svg_rect(SVG, x, SVG.block_size, SVG.block_size / 2 + 1, 2, SVG.track_style(SVG.label_colour))
+				eprint(contig[idx])
 	svg += '</g>\n'
 	svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.border['top'] + SVG.depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(SVG.font_size) + "pt; text-anchor:middle\"> <text>Ref</text> </g>"
 	return svg
@@ -556,8 +566,8 @@ def ltkmer_partial_svg(SVG, track, h):
 	svg += ltkmer_rect(SVG, begin, end - begin, h)
 	return svg
 
-def make_svg(SVG, ref, alnms, tracks, track_names, alnms_track = -1):
-	svg = reference_partial_svg(SVG, ref)
+def make_svg(SVG, ref, alnms, tracks, track_names, extra = {'sam_track' : -1}):
+	svg = reference_partial_svg(SVG, ref, extra)
 	ref_depth = SVG.depth
 	# max total - used - bottom border - track borders
 	remaining_depth = SVG.height - SVG.depth - SVG.border['bottom'] - len(tracks) * SVG.track_distance
@@ -568,7 +578,7 @@ def make_svg(SVG, ref, alnms, tracks, track_names, alnms_track = -1):
 	for i in range(len(tracks)):
 		track = tracks[i]
 		if SVG.type == 'SAM':
-			svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i, alnms_track)
+			svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i, extra)
 		elif SVG.type == 'XMAP':
 			piles = pile_entries(SVG, alnms[i])
 			svg += xmap_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i)
