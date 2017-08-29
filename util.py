@@ -573,6 +573,22 @@ def make_svg(SVG, ref, alnms, tracks, track_names, extra = {'sam_track' : -1}):
 	remaining_depth = SVG.height - SVG.depth - SVG.border['bottom'] - len(tracks) * SVG.track_distance
 	max_subtracks = (remaining_depth + len(tracks) * SVG.line_distance) / (SVG.line_height + SVG.line_distance)
 	max_subtracks = max_subtracks if max_subtracks < SVG.max_subtracks else SVG.max_subtracks
+	if extra['filter']:
+		filtered_alnms = []
+		filtered = 0
+		for alnm in alnms:
+			name = alnm.qname
+			baseline = tracks[0][name].seq
+			filter = True
+			for i in range(1, len(tracks)):
+				if tracks[i][name].seq != baseline:
+					filter = False
+			if not filter:
+				filtered_alnms += [alnm]
+			else:
+				filtered += 1
+		eprint('Filtered ', filtered, ' unchanged reads.')
+		alnms = filtered_alnms
 	if SVG.type == 'SAM':
 		piles = pile_entries(SVG, alnms)
 	for i in range(len(tracks)):

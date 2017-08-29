@@ -50,7 +50,7 @@ def main_SAM(argv=None):
 	if argv == None:
 		argv = sys.argv
 	if len(argv) < 7:
-		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance verbose <--contig contig_start contig_end> sorted.sam sam_track_idx track1 reads1.fastq kmer_count1 <track2 reads2.fastq kmer_count2 ...>'\
+		print('Usage: alignmentSVG.py SAM reference.fasta ref_id ref_begin_idx ref_distance verbose <--filter> <--contig contig_start contig_end> sorted.sam sam_track_idx track1 reads1.fastq kmer_count1 <track2 reads2.fastq kmer_count2 ...>'\
 		 	+ '\n' + 'Use \'-\' if no kmer_count file is provided.'\
 			+ '\n' + 'sam_track_idx is the 0-indexed track that corresponds to the SAM file, use -1 if not applicable.'\
 			+ '\n' + 'verbose is 0 if no reference labels are wanted, 1 if they are.'\
@@ -64,6 +64,10 @@ def main_SAM(argv=None):
 	ref_id = int(argv[idx])
 	SVG = SVG_properties(argv[1], int(argv[4]), int(argv[5]), bool(int(argv[6])))
 	idx = 7
+	extra['filter'] = False
+	if argv[idx] == '--filter':
+		extra['filter'] = True
+		idx += 1
 	extra['contigs'] = []
 	while argv[idx] == '--contig':
 		extra['contigs'] += [[int(argv[idx + 1]), int(argv[idx + 2])]]
