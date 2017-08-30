@@ -459,7 +459,7 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track,
 			if track != extra['sam_track']:
 				ins = sum(i for (i,j) in e.cigar if j == 'I')
 				cigar = NW(ref_substr[:len(seq) - ins], seq)
-			eprint(e.qname, cigar)
+			eprint(e.qname, ''.join(str(i)+str(j) for (i,j) in cigar))
 			svg += draw_seq(SVG, SVG.border['left'] + rel_pos * SVG.block_size, 0, ref_substr, seq, cigar)
 			svg += '</g>\n'
 		add_svg_empty_space(SVG, SVG.line_distance)
