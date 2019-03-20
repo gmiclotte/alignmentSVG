@@ -427,7 +427,7 @@ def draw_seq(SVG, x, y, ref, seq, cigar, diff_only = True):
 def update_depth(SVG, y, h):
 	SVG.depth = y + h if y + h > SVG.depth else SVG.depth
 
-def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, extra):
+def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, extra, diffcol):
 	eprint('Drawing track: ' + track_names[track] + '.')
 	svg = ''
 	add_svg_empty_space(SVG, SVG.track_distance)
@@ -445,7 +445,11 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track,
 			w = SVG.border['left'] + min(rel_end, SVG.dist) * SVG.block_size - x
 			svg += '\n'
 			svg += '<g transform=\"translate(' + str(0) + ',' + str(y) + ')\">\n'
-			svg += add_svg_rect(SVG, x, 0, w , h, SVG.track_style(SVG.line_colour[track%2]))
+			colour = SVG.line_colour[track%2]
+			#handle diffcol
+			if track==0 and e.qname[:-2] in diffcol:
+				colour = '#eecee3'
+			svg += add_svg_rect(SVG, x, 0, w , h, SVG.track_style(colour))
 			update_depth(SVG, prev_depth + y, h)
 			ref_start = SVG.view_range[0] + rel_pos
 			ref_end = SVG.view_range[0] + rel_pos + e.len
@@ -570,7 +574,7 @@ def ltkmer_partial_svg(SVG, track, h):
 	svg += ltkmer_rect(SVG, begin, end - begin, h)
 	return svg
 
-def make_svg(SVG, ref, alnms, tracks, track_names, extra = {'sam_track' : -1}):
+def make_svg(SVG, ref, alnms, tracks, track_names, extra = {'sam_track' : -1}, diffcol=None):
 	svg = reference_partial_svg(SVG, ref, extra)
 	ref_depth = SVG.depth
 	# max total - used - bottom border - track borders
@@ -598,7 +602,7 @@ def make_svg(SVG, ref, alnms, tracks, track_names, extra = {'sam_track' : -1}):
 	for i in range(len(tracks)):
 		track = tracks[i]
 		if SVG.type == 'SAM':
-			svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i, extra)
+			svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i, extra, diffcol)
 		elif SVG.type == 'XMAP':
 			piles = pile_entries(SVG, alnms[i])
 			svg += xmap_partial_svg(SVG, ref, track, piles, max_subtracks, track_names, i)

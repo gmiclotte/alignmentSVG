@@ -56,6 +56,11 @@ def main_SAM(argv=None):
 			+ '\n' + 'verbose is 0 if no reference labels are wanted, 1 if they are.'\
 		)
 		exit()
+	#read different colour file
+	diffcol = []
+	with open('DistinctColorIDs.txt') as file:
+		for line in file:
+			diffcol += [line[1:-1]]
 	#specify input, can be changed to cl options of course
 	extra = {}
 	idx = 2
@@ -90,7 +95,7 @@ def main_SAM(argv=None):
 			sequence = Sequence(s[0], s[1])
 			fasta[sequence.name] = sequence
 		reads += [fasta]
-	print(make_svg(SVG, references[ref_id], sam_entries, reads, tracks, extra))
+	print(make_svg(SVG, references[ref_id], sam_entries, reads, tracks, extra, diffcol))
 
 def main(argv=None):
 	if argv == None:
