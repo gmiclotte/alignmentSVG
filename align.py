@@ -24,6 +24,7 @@ mismatch = -4
 gap_open = -6
 gap_extend = -1
 
+
 def extend_cigar(cigar, new):
     count = cigar[-1][0]
     curr = cigar[-1][1]
@@ -35,7 +36,8 @@ def extend_cigar(cigar, new):
 
 
 def NW(ref, seq):
-    alignments = pairwise2.align.globalms(ref, seq, match, mismatch, gap_open, gap_extend)
+    alignments = pairwise2.align.globalms(
+        ref, seq, match, mismatch, gap_open, gap_extend)
     refal = alignments[0][0]
     seqal = alignments[0][1]
     cigar = [[0, 'M']]
