@@ -31,9 +31,13 @@ def eprint(*args, **kwargs):
 
 
 class SAMEntry:
-    def __init__(self, props):
+    def __init__(self, props, prev):
         self.qname = props[0]
-        self.flag = props[1]
+        self.flag = int(props[1])
+        if self.flag & 0x40:
+            self.qname += '.1'
+        elif self.flag & 0x80:
+            self.qname += '.2'
         self.rname = props[2]
         self.pos = int(props[3]) - 1  # change to 0-based
         self.mapq = props[4]
@@ -118,20 +122,32 @@ def fasta_parse(ifname):
 
 def fastq_parse(ifname):
     infile = open(ifname)
+    prev = None
     meta = ''
     seq = ''
     count = 0
     for line in infile:
         if count == 0:
             if len(meta) > 0:
+                if meta == prev:
+                    meta += '.2'
+                else:
+                    meta += '.1'
+                #eprint(prev, meta)
                 yield [meta, seq]
+                prev = meta[:-2]
                 meta = ''
                 seq = ''
-            meta = line[1:]
+            meta = line[1:-1]
         elif count == 1:
             seq = line.strip()
         count = (count + 1) % 4
     if len(meta) > 0:
+        if meta == prev:
+            meta += '.2'
+        else:
+            meta += '.1'
+        #eprint(prev, meta)
         yield [meta, seq]
     infile.close()
 
@@ -139,13 +155,16 @@ def fastq_parse(ifname):
 def sam_parse(ifname):
     infile = open(ifname)
     sam = []
+    prev = None
     for line in infile:
         if line.startswith('@'):  # header
             continue
         else:  # entry
             props = line.strip().split('\t')
             if props[5] != '*':
-                sam += [SAMEntry(props)]
+                entry = SAMEntry(props, prev)
+                prev = entry.qname
+                sam += [entry]
     infile.close()
     return sam
 
@@ -416,8 +435,8 @@ def xmap_partial_svg(SVG, cmap, bnx, piles, max_subtracks, track_names, track):
         # track string
         svg += '\n' + '<g writing-mode=\"tb-rl\" fill=\"black\" font-size=\"8\">'
         x = SVG.border['lefttext']
-        y = SVG.depth - (subtracks * (SVG.line_distance
-                                      + SVG.line_height) - SVG.line_distance) / 2
+        y = SVG.depth - (subtracks * (SVG.line_distance +
+                                      SVG.line_height) - SVG.line_distance) / 2
         svg += '\n' + '<text transform=\"translate(' + str(x) + ', ' + str(
             y) + ')rotate(270)\" style=' + SVG.text_style + '>' + tracks[track] + '</text>'
         svg += '\n</g>'
@@ -462,6 +481,12 @@ def update_depth(SVG, y, h):
     SVG.depth = y + h if y + h > SVG.depth else SVG.depth
 
 
+def RC(seq):
+    seq_dict = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G',
+                'N': 'N', 'a': 't', 't': 'a', 'g': 'c', 'c': 'g'}
+    return "".join([seq_dict[base] for base in reversed(seq)])
+
+
 def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, extra, diffcol, h_offset, w_max):
     eprint('Drawing track: ' + track_names[track] + '.')
     svg = ''
@@ -498,6 +523,9 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track,
             # ref_end = SVG.view_range[0] + rel_pos + e.len
             ref_substr = ref.seq[h_offset:][ref_start:]
             seq = fasta[e.qname].seq
+            if e.flag & 0x10:
+                # reverse complement the read
+                seq = RC(seq)
             if e.cigar[0][1] == 'S' or e.cigar[0][1] == 'H':
                 seq = seq[e.cigar[0][0]:]
             if e.cigar[-1][1] == 'S' or e.cigar[-1][1] == 'H':
@@ -592,10 +620,10 @@ def reference_partial_svg_sam(SVG, ref, extra):
                                     SVG.track_style(SVG.label_colour))
                 if idx == 1:
                     x = x + 1 - SVG.block_size / 2
-                svg += add_svg_rect(SVG, x, -2, SVG.block_size
-                                    / 2 + 1, 2, SVG.track_style(SVG.label_colour))
-                svg += add_svg_rect(SVG, x, SVG.block_size, SVG.block_size
-                                    / 2 + 1, 2, SVG.track_style(SVG.label_colour))
+                svg += add_svg_rect(SVG, x, -2, SVG.block_size /
+                                    2 + 1, 2, SVG.track_style(SVG.label_colour))
+                svg += add_svg_rect(SVG, x, SVG.block_size, SVG.block_size /
+                                    2 + 1, 2, SVG.track_style(SVG.label_colour))
                 eprint(contig[idx])
     svg += '</g>\n'
     return svg
@@ -649,8 +677,8 @@ def make_svg(SVG, ref, alnms, tracks, track_names, extra={'sam_track': -1}, diff
     # max total - used - bottom border - track borders
     remaining_depth = SVG.height - SVG.depth - \
         SVG.border['bottom'] - len(tracks) * SVG.track_distance
-    max_subtracks = (remaining_depth + len(tracks)
-                     * SVG.line_distance) / (SVG.line_height + SVG.line_distance)
+    max_subtracks = (remaining_depth + len(tracks) *
+                     SVG.line_distance) / (SVG.line_height + SVG.line_distance)
     max_subtracks = max_subtracks if max_subtracks < SVG.max_subtracks else SVG.max_subtracks
     if extra['filter']:
         filtered_alnms = []
