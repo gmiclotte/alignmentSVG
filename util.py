@@ -298,7 +298,7 @@ class SVG_properties:
             self.text_shift = -self.block_size
             self.zoom = 1 / self.block_size
             self.reference_height = self.line_height
-            self.ref_loc_nr = 5
+            self.ref_loc_nr = 3
 
     def init_xmap(self):
         self.max_subtracks = 20
@@ -424,32 +424,29 @@ def xmap_partial_svg(SVG, cmap, bnx, piles, max_subtracks, track_names, track):
     return svg
 
 
-def draw_seq(SVG, x, y, ref, seq, cigar, diff_only=True):
+def draw_seq(SVG, x, y, ref, seq, cigar, max_dist, diff_only=True):
     svg = '<g transform=\"translate(' + str(0) + ', ' + str(SVG.vshift_size) + \
         ')\" font-size=\"' + str(SVG.font_size) + '\" text-anchor=\"middle\">'
     ref_idx = 0
     seq_idx = 0
-    cig_idx = 0
-    cig_count = 0
     # expanded cigar
-    e_cigar = ''.join(c[1] * c[0]
-                      for c in cigar if c[1] != 'S' and c[1] != 'H')
+    e_cigar = ''.join(c[1] * c[0] for c in cigar if c[1] != 'S' and c[1] != 'H')
     for c in e_cigar:
         if c == 'D':
             xp = x + ref_idx * SVG.block_size
-            if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
-                svg += '<text x=\"' + \
-                    str(xp + SVG.block_size / 2) + '\">-</text>'
+            if SVG.border['left'] <= xp and xp < SVG.border['left'] + max_dist * SVG.block_size:
+                svg += '<text x=\"' + str(xp + SVG.block_size / 2) + '\">-</text>'
             ref_idx += 1
         elif c == 'I':
             xp = x + ref_idx * SVG.block_size - 1
-            if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
-                svg += '<rect x=\"' + str(xp) + '\" y=\"' + str(-SVG.vshift_size) + '\" width=\"' + str(
-                    2) + '\" height=\"' + str(SVG.block_size) + '\" style=' + SVG.track_style(SVG.label_colour) + '/>'
+            if SVG.border['left'] <= xp and xp < SVG.border['left'] + max_dist * SVG.block_size:
+                svg += '<rect x=\"' + str(xp) + '\" y=\"' + str(-SVG.vshift_size) + '\" width=\"'
+                svg += str(2) + '\" height=\"' + str(SVG.block_size) + '\" style='
+                svg += SVG.track_style(SVG.label_colour) + '/>'
             seq_idx += 1
         elif c == 'M':
             xp = x + ref_idx * SVG.block_size
-            if SVG.border['left'] <= xp and xp < SVG.border['left'] + SVG.dist * SVG.block_size:
+            if SVG.border['left'] <= xp and xp < SVG.border['left'] + max_dist * SVG.block_size:
                 #eprint(seq_idx, ref_idx, seq[seq_idx], ref[ref_idx])
                 if (not diff_only) or seq[seq_idx] != ref[ref_idx]:
                     svg += '<text x=\"' + \
@@ -465,43 +462,41 @@ def update_depth(SVG, y, h):
     SVG.depth = y + h if y + h > SVG.depth else SVG.depth
 
 
-def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, extra, diffcol):
+def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track, extra, diffcol, h_offset, w_max):
     eprint('Drawing track: ' + track_names[track] + '.')
     svg = ''
-    svg_top = ''
     add_svg_empty_space(SVG, SVG.track_distance)
     prev_depth = SVG.depth
     subtracks = 0
-    svg += '<g transform=\"translate(' + str(0) + ',' + str(
-        prev_depth) + ')\" id=\"' + track_names[track] + '\">\n'
-    svg_top += '<g transform=\"translate(' + str(0) + ',' + str(
-        prev_depth) + ')\" id=\"' + track_names[track] + '\">\n'
+    svg += f'<g transform=\"translate({0},{prev_depth})\" id=\"{track_names[track]}\">\n'
     for pile in piles:
         subtracks += 1
+        begin = SVG.begin + h_offset
+        block_size = SVG.block_size
+        line_distance = SVG.line_distance
+        dist = min(SVG.dist, w_max)
         y = SVG.depth - prev_depth
-        h = SVG.block_size
+        h = block_size
+        empty_pile = True
         for e in pile:
-            rel_pos = e.pos - SVG.begin
+            rel_pos = e.pos - begin
             rel_end = rel_pos + e.len
-            x = SVG.border['left'] + max(rel_pos, 0) * SVG.block_size
-            w = SVG.border['left'] + \
-                min(rel_end, SVG.dist) * SVG.block_size - x
+            x = SVG.border['left'] + max(rel_pos, 0) * block_size
+            w = SVG.border['left'] + min(rel_end, dist) * block_size - x
+            if min(rel_end, dist) < max(rel_pos, 0):
+                continue
+            empty_pile = False
             svg += '\n'
-            svg_top += '\n'
-            svg += '<g transform=\"translate(' + \
-                str(0) + ',' + str(y) + ')\">\n'
-            svg_top += '<g transform=\"translate(' + \
-                str(0) + ',' + str(y) + ')\">\n'
+            svg += f'<g transform=\"translate({0},{y})\">\n'
             colour = SVG.line_colour[track % 2]
             # handle diffcol
             if track == 0 and e.qname[:-2] in diffcol:
                 colour = '#eecee3'
             svg += add_svg_rect(SVG, x, 0, w, h, SVG.track_style(colour))
-            svg_top += add_svg_rect(SVG, x, 0, w, h, SVG.track_style(colour))
             update_depth(SVG, prev_depth + y, h)
             ref_start = SVG.view_range[0] + rel_pos
             # ref_end = SVG.view_range[0] + rel_pos + e.len
-            ref_substr = ref.seq[ref_start:]
+            ref_substr = ref.seq[h_offset:][ref_start:]
             seq = fasta[e.qname].seq
             if e.cigar[0][1] == 'S' or e.cigar[0][1] == 'H':
                 seq = seq[e.cigar[0][0]:]
@@ -512,26 +507,28 @@ def fasta_partial_svg(SVG, ref, fasta, piles, max_subtracks, track_names, track,
                 ins = sum(i for (i, j) in e.cigar if j == 'I')
                 cigar = NW(ref_substr[:len(seq) - ins], seq)
             eprint(e.qname, ''.join(str(i) + str(j) for (i, j) in cigar))
-            svg += draw_seq(SVG, SVG.border['left'] + rel_pos
-                            * SVG.block_size, 0, ref_substr, seq, cigar)
+            svg += draw_seq(SVG, SVG.border['left'] + rel_pos * block_size, 0, ref_substr, seq,
+                            cigar, dist)
             svg += '</g>\n'
-            svg_top += draw_seq(SVG, SVG.border['left'] + rel_pos
-                                * SVG.block_size, 0, ref_substr, seq, cigar)
-            svg_top += '</g>\n'
-        add_svg_empty_space(SVG, SVG.line_distance)
+        if not empty_pile:
+            add_svg_empty_space(SVG, line_distance)
         if subtracks == max_subtracks:
             break
     # correct for depth after last subtrack
     add_svg_empty_space(SVG, -SVG.line_distance)
-    svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.depth - prev_depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(
-        SVG.font_size) + "pt; text-anchor:middle\"> <text>" + track_names[track] + "</text> </g>"
+    # add track name
+    if SVG.text:
+        svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + ","
+        svg += str((SVG.depth - prev_depth) / 2) + \
+            ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:"
+        svg += str(SVG.font_size) + "pt; text-anchor:middle\"> <text>" + track_names[track]
+        svg += "</text> </g>"
+    # add kmer count
     svg += ltkmer_partial_svg(SVG, track, SVG.depth - prev_depth)
+    # close
     svg += '</g>\n'
-    svg_top += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.depth - prev_depth) / 2) + ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + str(
-        SVG.font_size) + "pt; text-anchor:middle\"> <text>" + track_names[track] + "</text> </g>"
-    svg_top += ltkmer_partial_svg(SVG, track, SVG.depth - prev_depth)
-    svg_top += '</g>\n'
-    return svg_top
+    # return svg group
+    return svg
 
 
 def reference_partial_svg(SVG, ref, extra):
@@ -572,6 +569,7 @@ def reference_location(SVG):
 def reference_partial_svg_sam(SVG, ref, extra):
     eprint('Drawing reference track.')
     if len(ref.seq) < SVG.view_range[1]:
+        eprint('Trimming view range.')
         SVG.dist = len(ref.seq) - SVG.begin
         SVG.view_range = [SVG.begin, len(ref.seq)]
     x = SVG.border['left']
@@ -600,9 +598,6 @@ def reference_partial_svg_sam(SVG, ref, extra):
                                     / 2 + 1, 2, SVG.track_style(SVG.label_colour))
                 eprint(contig[idx])
     svg += '</g>\n'
-    svg += "<g transform=\"translate(" + str(SVG.border['lefttext']) + "," + str((SVG.border['top'] + SVG.depth) / 2) + \
-        ") rotate(270)\" style=\"stroke:none; fill:black; font-family:Arial; font-size:" + \
-        str(SVG.font_size) + "pt; text-anchor:middle\"> <text>Ref</text> </g>"
     return svg
 
 
@@ -651,8 +646,6 @@ def ltkmer_partial_svg(SVG, track, h):
 
 
 def make_svg(SVG, ref, alnms, tracks, track_names, extra={'sam_track': -1}, diffcol=None):
-    svg = reference_partial_svg(SVG, ref, extra)
-    ref_depth = SVG.depth
     # max total - used - bottom border - track borders
     remaining_depth = SVG.height - SVG.depth - \
         SVG.border['bottom'] - len(tracks) * SVG.track_distance
@@ -677,16 +670,65 @@ def make_svg(SVG, ref, alnms, tracks, track_names, extra={'sam_track': -1}, diff
         alnms = filtered_alnms
     if SVG.type == 'SAM':
         piles = pile_entries(SVG, alnms)
+
+    # svg
+    svg = ''
+
+    # top track
+    h_offset = SVG.h_offset
+    w_max = SVG.w_max
+    factor = (SVG.border['left'] + SVG.dist * SVG.block_size + SVG.border['right'])
+    factor /= (SVG.border['left'] + w_max * SVG.block_size + SVG.border['right'])
+    svg += f'<g transform="scale({factor} {factor})" id="zoom_tracks">\n'
+    tmp = [SVG.view_range[0], SVG.view_range[1]]
+    SVG.view_range[0] += h_offset
+    SVG.view_range[1] = SVG.view_range[0] + w_max
+    tmpdist = SVG.dist
+    SVG.dist = w_max
+    svg += reference_partial_svg(SVG, ref, extra)
+    SVG.view_range = tmp
+    tmp = None
+    SVG.dist = tmpdist
+    tmpdist = None
     for i in range(len(tracks)):
         track = tracks[i]
         if SVG.type == 'SAM':
             svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks,
-                                     track_names, i, extra, diffcol)
+                                     track_names, i, extra, diffcol, h_offset, w_max)
+    svg += '</g>\n'
+    SVG.height = SVG.depth * factor + SVG.border['bottom']
+
+    # middle dotted lines
+    svg += f'<g transform="translate({0} {SVG.height})" id="zoom_lines">\n'
+    x1 = SVG.border['left'] * factor
+    y1 = 10
+    x2 = SVG.border['left'] + SVG.block_size * h_offset
+    y2 = SVG.height * 0.1 - 20
+    svg += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" style="stroke:rgb(0,0,0);stroke-width:{SVG.block_size}" />'
+    x1 = (SVG.border['left'] + SVG.block_size * w_max) * factor
+    y1 = 10
+    x2 = SVG.border['left'] + SVG.block_size * (h_offset + w_max)
+    y2 = SVG.height * 0.1 - 20
+    svg += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" style="stroke:rgb(0,0,0);stroke-width:{SVG.block_size}" />'
+    svg += '</g>\n'
+    SVG.height *= 1.1
+
+    # bottom picture
+    SVG.depth = 0
+    SVG.text = False
+    svg += f'<g transform="translate({0} {SVG.height})" id="main_tracks">\n'
+    #svg += reference_partial_svg(SVG, ref, extra)
+    for i in range(len(tracks)):
+        track = tracks[i]
+        if SVG.type == 'SAM':
+            svg += fasta_partial_svg(SVG, ref, track, piles, max_subtracks,
+                                     track_names, i, extra, diffcol, 0, SVG.dist)
         elif SVG.type == 'XMAP':
             piles = pile_entries(SVG, alnms[i])
             svg += xmap_partial_svg(SVG, ref, track,
                                     piles, max_subtracks, track_names, i)
-    SVG.height = SVG.depth + SVG.border['bottom']
+    svg += '</g>\n'
+    SVG.height += SVG.depth + SVG.border['bottom']
     return start_partial_svg(SVG) + svg + end_partial_svg()
 
 

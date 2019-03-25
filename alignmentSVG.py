@@ -81,7 +81,9 @@ def main_SAM(argv=None):
     ref_id = int(argv[idx])
     SVG = SVG_properties(argv[1], int(argv[4]),
                          int(argv[5]), bool(int(argv[6])))
-    idx = 7
+    SVG.h_offset = int(argv[7])
+    SVG.w_max = int(argv[8])
+    idx = 9
     extra['filter'] = False
     if argv[idx] == '--filter':
         extra['filter'] = True
